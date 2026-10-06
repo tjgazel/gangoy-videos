@@ -267,6 +267,14 @@ export function haTarefaEmExecucao(): boolean {
   return atual !== null;
 }
 
+export function haTarefaAtivaDoProjeto(projetoId: number): boolean {
+  return Boolean(
+    obterBanco()
+      .prepare("SELECT 1 FROM tarefas WHERE projeto_id = ? AND status IN ('na_fila', 'executando') LIMIT 1")
+      .get(projetoId),
+  );
+}
+
 export function iniciarFila(): void {
   ativa = true;
   acordarFila();
