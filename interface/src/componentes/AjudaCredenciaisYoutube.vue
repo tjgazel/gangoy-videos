@@ -18,7 +18,7 @@ const links = [
 <template>
   <Dialog>
     <DialogTrigger as-child>
-      <Button type="button" variant="outline" size="sm"><CircleHelp /> Como obter as credenciais</Button>
+      <Button type="button" variant="outline" size="sm" class="w-fit justify-self-start"><CircleHelp /> Como obter as credenciais</Button>
     </DialogTrigger>
     <DialogContent class="max-h-[85vh] overflow-y-auto sm:max-w-2xl">
       <DialogHeader>
@@ -29,23 +29,23 @@ const links = [
         </DialogDescription>
       </DialogHeader>
 
-      <ol class="grid list-decimal gap-4 pl-5 text-sm marker:font-semibold">
-        <li class="grid gap-1">
-          <strong>Crie um projeto no Google Cloud</strong>
+      <ol class="list-decimal space-y-4 pl-5 text-sm marker:font-semibold">
+        <li class="pl-1">
+          <strong class="block">Crie um projeto no Google Cloud</strong>
           <span>
             Entre em <a href="https://console.cloud.google.com/" target="_blank" rel="noopener noreferrer" class="underline">console.cloud.google.com</a>
             com a conta dona do canal, abra o seletor de projetos (no topo) e clique em <em>Novo projeto</em>.
           </span>
         </li>
-        <li class="grid gap-1">
-          <strong>Ative a YouTube Data API v3</strong>
+        <li class="pl-1">
+          <strong class="block">Ative a YouTube Data API v3</strong>
           <span>
             Em <em>APIs e serviços › Biblioteca</em>, procure por <em>YouTube Data API v3</em> e clique em <em>Ativar</em>
             (<a href="https://console.cloud.google.com/apis/library/youtube.googleapis.com" target="_blank" rel="noopener noreferrer" class="underline">atalho</a>).
           </span>
         </li>
-        <li class="grid gap-1">
-          <strong>Configure a tela de consentimento (Google Auth Platform)</strong>
+        <li class="pl-1">
+          <strong class="block">Configure a tela de consentimento (Google Auth Platform)</strong>
           <span>
             Em <em>Google Auth Platform</em>, siga o assistente inicial: nome do app e e-mail de suporte.
             No <em>Público-alvo</em>, escolha <em>Externo</em> e deixe o status <em>Em teste</em>.
@@ -53,8 +53,8 @@ const links = [
             Em <em>Acesso a dados</em>, adicione os escopos <code>youtube.upload</code> e <code>youtube.force-ssl</code>, que o app usa.
           </span>
         </li>
-        <li class="grid gap-1">
-          <strong>Crie o cliente OAuth</strong>
+        <li class="pl-1">
+          <strong class="block">Crie o cliente OAuth</strong>
           <span>
             Em <em>Google Auth Platform › Clientes</em>
             (<a href="https://console.cloud.google.com/auth/clients" target="_blank" rel="noopener noreferrer" class="underline">atalho</a>),
@@ -62,8 +62,8 @@ const links = [
             O Google mostra o <strong>Client ID</strong> e o <strong>Client Secret</strong>: o segredo só aparece na criação, então copie e guarde.
           </span>
         </li>
-        <li class="grid gap-1">
-          <strong>Cole aqui e conecte</strong>
+        <li class="pl-1">
+          <strong class="block">Cole aqui e conecte</strong>
           <span>
             Cole o Client ID e o Client Secret nos campos desta tela, salve e clique em <em>Conectar conta do YouTube</em>.
             Como o app não foi verificado pelo Google, aparece o aviso de app não verificado: é esperado, escolha
