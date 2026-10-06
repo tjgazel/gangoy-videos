@@ -1,5 +1,10 @@
 <script setup lang="ts">
 import { onMounted, ref, watch } from "vue";
+import { ArrowLeft, Folder, FolderPlus, HardDrive } from "@lucide/vue";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { chamarApi } from "../api/cliente";
 
 interface Listagem {
@@ -54,82 +59,42 @@ watch(
 );
 onMounted(() => abrir(props.modelValue));
 </script>
-
 <template>
-  <div class="navegador">
-    <div class="raizes" v-if="listagem?.raizes.length">
-      <button v-for="raiz in listagem.raizes" :key="raiz.caminho" type="button" class="botao" @click="abrir(raiz.caminho)">
-        {{ raiz.nome }}
-      </button>
+  <div class="grid gap-3">
+    <div v-if="listagem?.raizes.length" class="flex flex-wrap gap-2">
+      <Button v-for="raiz in listagem.raizes" :key="raiz.caminho" type="button" variant="outline" size="sm" @click="abrir(raiz.caminho)">
+        <HardDrive /> {{ raiz.nome }}
+      </Button>
     </div>
 
-    <form class="ir-para" @submit.prevent="abrir(digitado)">
-      <input v-model="digitado" aria-label="Caminho da pasta" placeholder="Cole ou digite um caminho" />
-      <button type="submit" class="botao">Abrir</button>
+    <form class="flex gap-2" @submit.prevent="abrir(digitado)">
+      <Input v-model="digitado" aria-label="Caminho da pasta" placeholder="Cole ou digite um caminho" />
+      <Button type="submit" variant="outline">Abrir</Button>
     </form>
 
-    <p v-if="erro" class="erro-texto">{{ erro }}</p>
+    <Alert v-if="erro" variant="destructive"><AlertDescription>{{ erro }}</AlertDescription></Alert>
 
-    <div v-if="listagem?.caminho" class="pasta-atual">
-      <div class="cabecalho">
-        <button type="button" class="botao" :disabled="!listagem.pai" @click="abrir(listagem.pai)">Voltar</button>
-        <span class="caminho" data-testid="caminho-atual">{{ listagem.caminho }}</span>
-        <button type="button" class="botao" @click="criando = !criando">Nova pasta</button>
+    <div v-if="listagem?.caminho" class="overflow-hidden rounded-lg border">
+      <div class="flex items-center gap-2 border-b bg-muted/50 p-2">
+        <Button type="button" variant="outline" size="sm" :disabled="!listagem.pai" @click="abrir(listagem.pai)"><ArrowLeft /> Voltar</Button>
+        <span class="min-w-0 flex-1 truncate text-sm" data-testid="caminho-atual">{{ listagem.caminho }}</span>
+        <Button type="button" variant="outline" size="sm" @click="criando = !criando"><FolderPlus /> Nova pasta</Button>
       </div>
-      <form v-if="criando" class="nova" @submit.prevent="criarPasta">
-        <input v-model="nomeNova" aria-label="Nome da nova pasta" placeholder="Nome da pasta" />
-        <button type="submit" class="botao principal">Criar pasta</button>
+      <form v-if="criando" class="flex gap-2 border-b p-2" @submit.prevent="criarPasta">
+        <Input v-model="nomeNova" aria-label="Nome da nova pasta" placeholder="Nome da pasta" />
+        <Button type="submit">Criar pasta</Button>
       </form>
-      <ul class="pastas">
-        <li v-for="pasta in listagem.pastas" :key="pasta.caminho">
-          <button type="button" @click="abrir(pasta.caminho)">{{ pasta.nome }}</button>
-        </li>
-        <li v-if="!listagem.pastas.length" class="vazio">Nenhuma subpasta aqui.</li>
-      </ul>
+      <ScrollArea class="h-60">
+        <ul class="grid p-1">
+          <li v-for="pasta in listagem.pastas" :key="pasta.caminho">
+            <Button type="button" variant="ghost" class="w-full justify-start" @click="abrir(pasta.caminho)">
+              <Folder /> {{ pasta.nome }}
+            </Button>
+          </li>
+          <li v-if="!listagem.pastas.length" class="p-2 text-sm text-muted-foreground">Nenhuma subpasta aqui.</li>
+        </ul>
+      </ScrollArea>
     </div>
-    <p v-else class="vazio">Escolha uma unidade ou cole um caminho para começar.</p>
+    <p v-else class="text-sm text-muted-foreground">Escolha uma unidade ou cole um caminho para começar.</p>
   </div>
 </template>
-
-<style scoped>
-.navegador { display: grid; gap: 10px; }
-.raizes { display: flex; flex-wrap: wrap; gap: 6px; }
-.ir-para, .nova { display: flex; gap: 8px; }
-.pasta-atual {
-  border: 1px solid var(--cartao-borda);
-  border-radius: 8px;
-  overflow: hidden;
-}
-.cabecalho {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px;
-  background: var(--superficie);
-}
-.caminho {
-  flex: 1;
-  min-width: 0;
-  overflow-wrap: anywhere;
-  font-size: 13px;
-}
-.nova { padding: 8px; border-bottom: 1px solid var(--cartao-borda); }
-.pastas {
-  list-style: none;
-  margin: 0;
-  padding: 4px;
-  max-height: 260px;
-  overflow: auto;
-}
-.pastas button {
-  width: 100%;
-  text-align: left;
-  background: none;
-  border: 0;
-  border-radius: 6px;
-  padding: 6px 8px;
-  cursor: pointer;
-}
-.pastas button:hover { background: var(--destaque-suave); }
-.pastas .vazio { padding: 6px 8px; }
-</style>
