@@ -21,10 +21,21 @@ test("Host diferente de localhost/127.0.0.1 recebe 403", async () => {
   await app.close();
 });
 
-test("Host localhost:<porta>, 127.0.0.1:<porta> e localhost:5173 são aceitos", async () => {
+test("Host localhost:<porta> e 127.0.0.1:<porta> são aceitos; a porta do Vite, não", async () => {
   const app = await criarApp({ porta: PORTA, pastaDados: tmp });
-  for (const host of [`localhost:${PORTA}`, `127.0.0.1:${PORTA}`, "localhost:5173"]) {
+  for (const host of [`localhost:${PORTA}`, `127.0.0.1:${PORTA}`]) {
     const r = await app.inject({ url: "/api/configuracoes/app", headers: { host } });
+    assert.equal(r.statusCode, 200, host);
+  }
+  const vite = await app.inject({ url: "/api/configuracoes/app", headers: { host: "localhost:5173" } });
+  assert.equal(vite.statusCode, 403);
+  await app.close();
+});
+
+test("em desenvolvimento (npm run dev), Host e Origin da porta do Vite são aceitos", async () => {
+  const app = await criarApp({ porta: PORTA, pastaDados: tmp, desenvolvimento: true });
+  for (const host of ["localhost:5173", "127.0.0.1:5173"]) {
+    const r = await app.inject({ url: "/api/configuracoes/app", headers: { host, origin: "http://localhost:5173" } });
     assert.equal(r.statusCode, 200, host);
   }
   await app.close();
@@ -38,6 +49,17 @@ test("ErroAplicacao vira { erro } com o status", async () => {
   const r = await app.inject({ url: "/api/sistema/__erro", headers: { host: `localhost:${PORTA}` } });
   assert.equal(r.statusCode, 418);
   assert.deepEqual(r.json(), { erro: "Proibido aqui" });
+  await app.close();
+});
+
+test("erro do sistema de arquivos vira 500 com a mensagem em português", async () => {
+  const app = await criarApp({ porta: PORTA, pastaDados: tmp });
+  app.get("/api/sistema/__fs", async () => {
+    throw Object.assign(new Error("EPERM: operation not permitted, rename"), { code: "EPERM", path: "/ws/projeto" });
+  });
+  const r = await app.inject({ url: "/api/sistema/__fs", headers: { host: `localhost:${PORTA}` } });
+  assert.equal(r.statusCode, 500);
+  assert.deepEqual(r.json(), { erro: "Sem permissão para acessar: /ws/projeto" });
   await app.close();
 });
 
@@ -58,6 +80,6 @@ test("requisição com Origin de outro site recebe 403; mesma origem passa", asy
   const mesma = await app.inject({ url: "/api/configuracoes/app", headers: { host, origin: `http://localhost:${PORTA}` } });
   assert.equal(mesma.statusCode, 200);
   const vite = await app.inject({ url: "/api/configuracoes/app", headers: { host, origin: "http://localhost:5173" } });
-  assert.equal(vite.statusCode, 200);
+  assert.equal(vite.statusCode, 403);
   await app.close();
 });

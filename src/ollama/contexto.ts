@@ -47,11 +47,15 @@ function lerAmostras(): number[] {
   }
 }
 
+function limitarFator(fator: number): number {
+  return Math.min(FATOR_MAXIMO, Math.max(FATOR_MINIMO, fator));
+}
+
+// Cada amostra é limitada antes da média: uma medição absurda não desloca o fator sozinha.
 export function obterFatorTokens(): number {
   const amostras = lerAmostras();
   if (amostras.length === 0) return FATOR_INICIAL;
-  const media = amostras.reduce((total, valor) => total + valor, 0) / amostras.length;
-  return Math.min(FATOR_MAXIMO, Math.max(FATOR_MINIMO, media));
+  return amostras.reduce((total, valor) => total + limitarFator(valor), 0) / amostras.length;
 }
 
 // Guarda a relação real caracteres/token das últimas chamadas, para estimar melhor as próximas.

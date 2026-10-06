@@ -34,7 +34,10 @@ watch(() => status.value?.workspace.disponivel, carregarDados);
     <div class="area">
       <BarraTopo />
       <div v-if="workspaceAusente" class="faixa-erro" role="alert">
-        <span>Workspace não encontrada em {{ status?.workspace.caminho }}</span>
+        <span v-if="status?.workspace.semBanco">
+          A workspace em {{ status.workspace.caminho }} está sem o arquivo gangoy.db. Restaure-o de um backup ou aponte outro local.
+        </span>
+        <span v-else>Workspace não encontrada em {{ status?.workspace.caminho }}</span>
         <button type="button" class="botao" @click="recarregarStatus()">Tentar de novo</button>
         <RouterLink to="/boas-vindas" class="botao">Apontar outro local</RouterLink>
       </div>

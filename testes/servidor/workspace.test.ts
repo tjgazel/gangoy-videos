@@ -1,11 +1,11 @@
 import { test, after } from "node:test";
 import assert from "node:assert/strict";
-import { existsSync, mkdirSync, unlinkSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, rmSync, unlinkSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import type { FastifyInstance } from "fastify";
 import { criarApp } from "../../src/servidor/app.js";
 import { fecharBanco } from "../../src/banco/banco.js";
-import { criarOuReconhecerWorkspace } from "../../src/workspace/workspace.js";
+import { abrirWorkspaceConfigurada, criarOuReconhecerWorkspace } from "../../src/workspace/workspace.js";
 import { criarProjeto } from "../../src/projetos/projetos.js";
 import { salvarDossie, lerDossie, esquemaDossie } from "../../src/dossie/dossie.js";
 import { salvarNovaVersaoRoteiro } from "../../src/capitulos/capitulos.js";
@@ -15,6 +15,8 @@ const PORTA = 3997;
 const host = { host: `localhost:${PORTA}` };
 const pastas: string[] = [];
 const apps: FastifyInstance[] = [];
+const semBanco = (caminho: string) =>
+  `A workspace em ${caminho} está sem o arquivo gangoy.db. Restaure-o de um backup ou aponte outro local.`;
 
 after(async () => {
   for (const app of apps) await app.close();
@@ -85,6 +87,45 @@ test("workspace ausente → rotas de dados respondem 503", async () => {
   const r = await app.inject({ url: "/api/projetos", headers: host });
   assert.equal(r.statusCode, 503);
   assert.deepEqual(r.json(), { erro: `Workspace não encontrada em ${caminho}` });
+});
+
+// Marcador presente, banco sumido (apagado, ou backup copiado pela metade).
+function apagarBanco(caminho: string): void {
+  fecharBanco();
+  for (const nome of ["gangoy.db", "gangoy.db-wal", "gangoy.db-shm"]) rmSync(join(caminho, nome), { force: true });
+}
+
+test("workspace sem gangoy.db ao iniciar → 503 explicando, sem criar banco vazio", async () => {
+  const { local, app } = await novoAmbiente();
+  const { caminho } = criarOuReconhecerWorkspace(local);
+  apagarBanco(caminho);
+  abrirWorkspaceConfigurada();
+  const r = await app.inject({ url: "/api/projetos", headers: host });
+  assert.equal(r.statusCode, 503);
+  assert.deepEqual(r.json(), { erro: semBanco(caminho) });
+  assert.equal(existsSync(join(caminho, "gangoy.db")), false);
+  const status = (await app.inject({ url: "/api/sistema/status", headers: host })).json();
+  assert.equal(status.workspace.disponivel, false);
+  assert.equal(status.workspace.semBanco, true);
+});
+
+test("reconhecer workspace sem gangoy.db → 409, sem criar banco vazio", async () => {
+  const { local, app } = await novoAmbiente();
+  const { caminho } = criarOuReconhecerWorkspace(local);
+  apagarBanco(caminho);
+  const r = await app.inject({ method: "POST", url: "/api/workspace", headers: host, payload: { local } });
+  assert.equal(r.statusCode, 409);
+  assert.deepEqual(r.json(), { erro: semBanco(caminho) });
+  assert.equal(existsSync(join(caminho, "gangoy.db")), false);
+});
+
+test("apontar workspace sem gangoy.db → 409 explicando o que falta", async () => {
+  const { local, app } = await novoAmbiente();
+  const { caminho } = criarOuReconhecerWorkspace(local);
+  apagarBanco(caminho);
+  const r = await app.inject({ method: "POST", url: "/api/workspace/apontar", headers: host, payload: { caminho } });
+  assert.equal(r.statusCode, 409);
+  assert.deepEqual(r.json(), { erro: semBanco(caminho) });
 });
 
 test("sem workspace configurada → 503", async () => {

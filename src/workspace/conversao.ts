@@ -2,7 +2,7 @@ import { DatabaseSync } from "node:sqlite";
 import { copyFileSync, existsSync, mkdirSync, readdirSync, renameSync, rmSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { lerConfiguracaoApp } from "../nucleo/configuracaoApp.js";
-import { ErroAplicacao } from "../nucleo/erros.js";
+import { descreverErro, ErroAplicacao } from "../nucleo/erros.js";
 import { obterOpcoesExecucao } from "../nucleo/opcoesExecucao.js";
 import { copiarConferindo, medirPasta } from "./copiaConferida.js";
 import { ARQUIVO_BANCO } from "./workspace.js";
@@ -11,6 +11,8 @@ import { ARQUIVO_BANCO } from "./workspace.js";
 const BANCO_ANTIGO = "app.db";
 const PROJETOS_ANTIGOS = "projetos";
 const SUFIXO = ".migrado";
+// Só o que a conversão renomeia; outros *.migrado em dados/ não são nossos.
+const RENOMEADOS = [BANCO_ANTIGO, `${BANCO_ANTIGO}-wal`, `${BANCO_ANTIGO}-shm`, PROJETOS_ANTIGOS];
 
 export function existemDadosAntigos(pastaDados: string): boolean {
   return existsSync(join(pastaDados, BANCO_ANTIGO)) || existsSync(join(pastaDados, PROJETOS_ANTIGOS));
@@ -86,7 +88,7 @@ export function converterDadosAntigos(
       }
     }
   } catch (erro) {
-    const motivo = (erro as Error).message.replace(/\.$/, "");
+    const motivo = descreverErro(erro).replace(/\.$/, "");
     throw new ErroAplicacao(
       `A conversão dos dados antigos falhou: ${motivo}. Os dados originais continuam em dados/.`,
       500,
@@ -97,7 +99,7 @@ export function converterDadosAntigos(
   // Se uma renomeação falhar, desfaz as anteriores para dados/ ficar como estava.
   const renomeados: string[] = [];
   try {
-    for (const nome of [BANCO_ANTIGO, `${BANCO_ANTIGO}-wal`, `${BANCO_ANTIGO}-shm`, PROJETOS_ANTIGOS]) {
+    for (const nome of RENOMEADOS) {
       const caminho = join(pastaDados, nome);
       if (!existsSync(caminho)) continue;
       renomear(caminho, `${caminho}${SUFIXO}`);
@@ -112,7 +114,7 @@ export function converterDadosAntigos(
       }
     }
     throw new ErroAplicacao(
-      `A conversão dos dados antigos falhou: ${(erro as Error).message.replace(/\.$/, "")}. Os dados originais continuam em dados/.`,
+      `A conversão dos dados antigos falhou: ${descreverErro(erro).replace(/\.$/, "")}. Os dados originais continuam em dados/.`,
       500,
     );
   }
@@ -122,8 +124,8 @@ export function converterDadosAntigos(
 export function listarDadosAntigosConvertidos(): { itens: { nome: string; caminho: string; bytes: number }[] } {
   const pastaDados = obterOpcoesExecucao().pastaDados;
   if (!existsSync(pastaDados)) return { itens: [] };
-  const itens = readdirSync(pastaDados)
-    .filter((nome) => nome.endsWith(SUFIXO))
+  const itens = RENOMEADOS.map((nome) => `${nome}${SUFIXO}`)
+    .filter((nome) => existsSync(join(pastaDados, nome)))
     .map((nome) => {
       const caminho = join(pastaDados, nome);
       const bytes = statSync(caminho).isDirectory() ? medirPasta(caminho).bytes : statSync(caminho).size;

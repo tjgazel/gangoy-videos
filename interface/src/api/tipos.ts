@@ -128,6 +128,7 @@ export interface EstadoWorkspace {
   disponivel: boolean;
   caminho: string | null;
   movendo: boolean;
+  semBanco: boolean;
   espacoLivreBytes: number | null;
 }
 

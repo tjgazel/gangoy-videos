@@ -13,6 +13,8 @@ export interface EstadoWorkspace {
   disponivel: boolean;
   caminho: string | null;
   movendo: boolean;
+  // Marcador presente, mas sem gangoy.db (apagado, ou backup copiado pela metade).
+  semBanco: boolean;
   espacoLivreBytes: number | null;
 }
 
@@ -42,6 +44,15 @@ export function definirAoReabrir(funcao: () => void): void {
   aoReabrir = funcao;
 }
 
+function temBanco(caminho: string): boolean {
+  return existsSync(join(caminho, ARQUIVO_BANCO));
+}
+
+function mensagemSemBanco(caminho: string): string {
+  return `A workspace em ${caminho} está sem o arquivo ${ARQUIVO_BANCO}. Restaure-o de um backup ou aponte outro local.`;
+}
+
+// abrirBanco cria o arquivo se ele não existir: só a criação da workspace pode fazer isso.
 function abrir(caminho: string): void {
   abrirBanco(join(caminho, ARQUIVO_BANCO));
   pastaAtual = caminho;
@@ -54,6 +65,7 @@ export function criarOuReconhecerWorkspace(local: string): { caminho: string; cr
   }
   const existente = localizarWorkspace(local);
   if (existente) {
+    if (!temBanco(existente)) throw new ErroAplicacao(mensagemSemBanco(existente), 409);
     abrir(existente);
     return { caminho: existente, criada: false };
   }
@@ -81,9 +93,8 @@ export function criarOuReconhecerWorkspace(local: string): { caminho: string; cr
 
 export function apontarWorkspace(caminho: string): string {
   const encontrada = existsSync(caminho) ? localizarWorkspace(caminho) : null;
-  if (!encontrada || !existsSync(join(encontrada, ARQUIVO_BANCO))) {
-    throw new ErroAplicacao("Esta pasta não é uma workspace do Gangoy Vídeos", 400);
-  }
+  if (!encontrada) throw new ErroAplicacao("Esta pasta não é uma workspace do Gangoy Vídeos", 400);
+  if (!temBanco(encontrada)) throw new ErroAplicacao(mensagemSemBanco(encontrada), 409);
   abrir(encontrada);
   return encontrada;
 }
@@ -93,7 +104,7 @@ export function abrirWorkspaceConfigurada(): void {
   fecharBanco();
   pastaAtual = lerConfiguracaoLocal().pastaWorkspace;
   movendo = false;
-  if (pastaAtual && ehWorkspace(pastaAtual)) abrirBanco(join(pastaAtual, ARQUIVO_BANCO));
+  if (pastaAtual && ehWorkspace(pastaAtual) && temBanco(pastaAtual)) abrirBanco(join(pastaAtual, ARQUIVO_BANCO));
 }
 
 // Caminho da workspace em uso; confere o marcador a cada chamada (disco externo pode sumir).
@@ -105,6 +116,7 @@ export function obterPastaWorkspace(): string {
   if (!ehWorkspace(pastaAtual)) throw new ErroAplicacao(`Workspace não encontrada em ${pastaAtual}`, 503);
   // O disco voltou depois de ter sumido: reabre o banco.
   if (!bancoAberto()) {
+    if (!temBanco(pastaAtual)) throw new ErroAplicacao(mensagemSemBanco(pastaAtual), 503);
     abrirBanco(join(pastaAtual, ARQUIVO_BANCO));
     aoReabrir?.();
   }
@@ -116,7 +128,9 @@ export function definirMovendo(valor: boolean): void {
 }
 
 export function estadoWorkspace(): EstadoWorkspace {
-  const disponivel = pastaAtual !== null && ehWorkspace(pastaAtual);
+  const marcada = pastaAtual !== null && ehWorkspace(pastaAtual);
+  const semBanco = marcada && !temBanco(pastaAtual as string);
+  const disponivel = marcada && !semBanco;
   let espacoLivreBytes: number | null = null;
   if (disponivel) {
     try {
@@ -126,5 +140,5 @@ export function estadoWorkspace(): EstadoWorkspace {
       espacoLivreBytes = null; // disco saindo entre a conferência e a medição
     }
   }
-  return { configurada: pastaAtual !== null, disponivel, caminho: pastaAtual, movendo, espacoLivreBytes };
+  return { configurada: pastaAtual !== null, disponivel, caminho: pastaAtual, movendo, semBanco, espacoLivreBytes };
 }

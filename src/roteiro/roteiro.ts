@@ -137,24 +137,29 @@ async function executarRoteiro(
   let palavras = contarPalavras(roteiro);
 
   // Modelos costumam escrever menos do que o pedido: pede uma ampliação uma vez.
+  // Se o pedido de ampliação não couber no contexto, fica o roteiro já gerado (mais curto que o alvo).
   if (palavras < alvoPalavras * 0.8) {
     progresso(70, "Ampliando o texto");
-    const ampliacao = await gerarJsonIa(
-      modelo,
-      [
-        ...mensagens,
-        { role: "assistant", content: JSON.stringify(roteiro) },
-        {
-          role: "user",
-          content: `O roteiro ficou com ${palavras} palavras de narração, mas o alvo é de ${alvoPalavras}. Amplie as narrações e acrescente cenas para chegar perto do alvo, sem mudar a história nem os fatos. Responda com o JSON completo.`,
-        },
-      ],
-      esquemaRoteiro,
-      { tipo, sinal },
-    );
-    medicoes.push(ampliacao.medicao);
-    roteiro = ampliacao.dados;
-    palavras = contarPalavras(roteiro);
+    try {
+      const ampliacao = await gerarJsonIa(
+        modelo,
+        [
+          ...mensagens,
+          { role: "assistant", content: JSON.stringify(roteiro) },
+          {
+            role: "user",
+            content: `O roteiro ficou com ${palavras} palavras de narração, mas o alvo é de ${alvoPalavras}. Amplie as narrações e acrescente cenas para chegar perto do alvo, sem mudar a história nem os fatos. Responda com o JSON completo.`,
+          },
+        ],
+        esquemaRoteiro,
+        { tipo, sinal },
+      );
+      medicoes.push(ampliacao.medicao);
+      roteiro = ampliacao.dados;
+      palavras = contarPalavras(roteiro);
+    } catch (erro) {
+      if (!(erro instanceof ErroContextoInsuficiente)) throw erro;
+    }
   }
 
   progresso(95, "Salvando a versão");

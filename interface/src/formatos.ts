@@ -14,8 +14,3 @@ export function formatarBytes(bytes: number): string {
   }
   return `${valor.toLocaleString("pt-BR", { maximumFractionDigits: 1 })} ${unidades[indice]}`;
 }
-
-// 9800 de 32768 -> "9,8 mil de 32 mil"
-export function formatarMil(valor: number): string {
-  return `${(valor / 1000).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} mil`;
-}

@@ -63,6 +63,12 @@ test("calibra o fator com a média das amostras", () => {
   assert.equal(obterFatorTokens(), 3.5);
 });
 
+test("uma amostra fora da curva é limitada antes de entrar na média", () => {
+  for (let i = 0; i < 19; i++) registrarAmostraTokens(300, 100);
+  registrarAmostraTokens(1000, 1); // 1000 caracteres por token: medição absurda
+  assert.equal(obterFatorTokens(), 3.1); // (19 × 3,0 + 5,0) / 20
+});
+
 test("mede a fração em CPU por /api/ps", async () => {
   falso.definir({ modelos: [{ nome: MODELO, contextoMaximo: 262144, tamanho: 10, tamanhoVram: 7 }] });
   const { medicao } = await gerarJsonIa(MODELO, mensagens, esquema, { tipo: "continuidade" });

@@ -6,7 +6,7 @@ import { resolve } from "node:path";
 import { z } from "zod";
 import { lerConfiguracaoApp } from "../nucleo/configuracaoApp.js";
 import { definirOpcoesExecucao, obterOpcoesExecucao, type OpcoesExecucao } from "../nucleo/opcoesExecucao.js";
-import { ErroAplicacao } from "../nucleo/erros.js";
+import { ErroAplicacao, traduzirErroSistema } from "../nucleo/erros.js";
 import { bancoAberto, fecharBanco } from "../banco/banco.js";
 import { iniciarFila, pararFila, prepararFilaAoIniciar, registrarExecutor } from "../tarefas/fila.js";
 import { moverWorkspace } from "../workspace/mover.js";
@@ -31,29 +31,34 @@ import { registrarRotasConfiguracoes } from "./rotasConfiguracoes.js";
 import { registrarRotasHistoria } from "./rotasHistoria.js";
 import { registrarRotasYoutube } from "./rotasYoutube.js";
 
-// Porta do Vite em desenvolvimento: o proxy repassa o Host original.
+// Porta do Vite em desenvolvimento: o proxy repassa o Host original. Fora do npm run dev, é recusada.
 const PORTA_VITE = 5173;
 
 // /api/eventos não usa o banco: precisa funcionar antes da workspace existir e com o disco ausente.
 const ROTAS_SEM_WORKSPACE = ["/api/sistema/", "/api/workspace", "/api/configuracoes/app", "/api/eventos"];
 
-function hostPermitido(host: string | undefined, porta: number): boolean {
+function portasPermitidas(porta: number, desenvolvimento: boolean): number[] {
+  return desenvolvimento ? [porta, PORTA_VITE] : [porta];
+}
+
+function hostPermitido(host: string | undefined, portas: number[]): boolean {
   if (!host) return false;
-  const permitidos = [porta, PORTA_VITE].flatMap((p) => [`localhost:${p}`, `127.0.0.1:${p}`]);
+  const permitidos = portas.flatMap((p) => [`localhost:${p}`, `127.0.0.1:${p}`]);
   return permitidos.includes(host.toLowerCase());
 }
 
 // Navegador manda Origin em POST de outro site (até sem corpo, em modo no-cors): só aceita as nossas.
-function origemPermitida(origem: string | undefined, porta: number): boolean {
+function origemPermitida(origem: string | undefined, portas: number[]): boolean {
   if (!origem) return true;
-  const permitidas = [porta, PORTA_VITE].flatMap((p) => [`http://localhost:${p}`, `http://127.0.0.1:${p}`]);
+  const permitidas = portas.flatMap((p) => [`http://localhost:${p}`, `http://127.0.0.1:${p}`]);
   return permitidas.includes(origem.toLowerCase());
 }
 
 // Monta o servidor sem abrir a porta: usado pelo servidor real e pelos testes.
 export async function criarApp(opcoes: Partial<OpcoesExecucao> = {}): Promise<FastifyInstance> {
   definirOpcoesExecucao(opcoes);
-  const { porta } = obterOpcoesExecucao();
+  const { porta, desenvolvimento } = obterOpcoesExecucao();
+  const portas = portasPermitidas(porta, desenvolvimento);
 
   // Nos testes (node:test) o log fica desligado para não poluir a saída.
   const app = Fastify({ logger: !process.env.NODE_TEST_CONTEXT });
@@ -69,7 +74,7 @@ export async function criarApp(opcoes: Partial<OpcoesExecucao> = {}): Promise<Fa
 
   // Protege contra DNS rebinding: a API lista pastas e move arquivos.
   app.addHook("onRequest", async (requisicao, resposta) => {
-    if (!hostPermitido(requisicao.headers.host, porta) || !origemPermitida(requisicao.headers.origin, porta)) {
+    if (!hostPermitido(requisicao.headers.host, portas) || !origemPermitida(requisicao.headers.origin, portas)) {
       return resposta.code(403).send({ erro: "Acesso recusado" });
     }
   });
@@ -85,7 +90,9 @@ export async function criarApp(opcoes: Partial<OpcoesExecucao> = {}): Promise<Fa
       return resposta.code(status).send({ erro: (erro as Error).message });
     }
     requisicao.log.error(erro);
-    return resposta.code(500).send({ erro: "Erro inesperado. Veja o log do servidor." });
+    // Arquivo travado, sem permissão, disco cheio...: a explicação em pt-BR ajuda mais que "erro inesperado".
+    const doSistema = traduzirErroSistema(erro);
+    return resposta.code(500).send({ erro: doSistema ?? "Erro inesperado. Veja o log do servidor." });
   });
 
   abrirWorkspaceConfigurada();

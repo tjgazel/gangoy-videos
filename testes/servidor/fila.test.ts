@@ -87,6 +87,18 @@ test("ErroAplicacao → falhou com a mensagem", async () => {
   assert.equal(final.erro, "Sem dossiê");
 });
 
+test("erro do sistema de arquivos → falhou com a mensagem em português", async () => {
+  registrarExecutor("gerar_roteiro", async () => {
+    throw Object.assign(new Error("EBUSY: resource busy or locked, rename 'C:\\ws\\gangoy.db'"), {
+      code: "EBUSY",
+      path: "C:\\ws\\gangoy.db",
+    });
+  });
+  const tarefa = nova();
+  await aguardarFilaOciosa();
+  assert.equal(buscarTarefa(tarefa.id)!.erro, "Arquivo em uso por outro programa: C:\\ws\\gangoy.db");
+});
+
 test("cancelar na fila → cancelada sem executar", async () => {
   const executadas: number[] = [];
   registrarExecutor("gerar_roteiro", async (tarefa) => {

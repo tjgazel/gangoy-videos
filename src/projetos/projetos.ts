@@ -6,6 +6,7 @@ import { lerConfiguracaoApp } from "../nucleo/configuracaoApp.js";
 import { pastaLixeira as obterPastaLixeira, pastaProjeto } from "../workspace/caminhos.js";
 import { ErroAplicacao } from "../nucleo/erros.js";
 import { gerarSlug } from "../nucleo/nomes.js";
+import { haTarefaAtivaDoProjeto } from "../tarefas/fila.js";
 
 const expressaoFrequencia = /^(diaria|semanal:(seg|ter|qua|qui|sex|sab|dom):([01]\d|2[0-3]):[0-5]\d)$/;
 
@@ -184,6 +185,13 @@ export function editarProjeto(id: number, dados: EdicaoProjeto): Projeto {
 export function excluirProjeto(id: number): { pastaLixeira: string | null } {
   const projeto = buscarProjetoPorId(id);
   if (!projeto) throw new ErroAplicacao("Projeto não encontrado", 404);
+  // Uma tarefa rodando recriaria a pasta do projeto depois da exclusão.
+  if (haTarefaAtivaDoProjeto(id)) {
+    throw new ErroAplicacao(
+      "Há tarefas deste projeto na fila ou em execução. Aguarde terminar ou cancele antes de excluir.",
+      409,
+    );
+  }
 
   const origem = pastaProjeto(projeto.slug);
   let pastaLixeira: string | null = null;

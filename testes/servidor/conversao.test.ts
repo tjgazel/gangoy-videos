@@ -86,6 +86,18 @@ test("apagar dados antigos remove só app.db.migrado e projetos.migrado", async 
   assert.deepEqual(deNovo.json(), { erro: "Não há dados antigos para apagar" });
 });
 
+test("outros arquivos .migrado em dados/ não são listados nem apagados", async () => {
+  const { dados, local, app } = await ambienteComDadosAntigos();
+  criarOuReconhecerWorkspace(local);
+  writeFileSync(join(dados, "notas.migrado"), "do usuário");
+  mkdirSync(join(dados, "backup.migrado"));
+  const lista = await app.inject({ url: "/api/workspace/dados-antigos", headers: host });
+  const nomes = lista.json().itens.map((item: { nome: string }) => item.nome);
+  assert.ok(!nomes.includes("notas.migrado") && !nomes.includes("backup.migrado"), nomes.join(", "));
+  await app.inject({ method: "DELETE", url: "/api/workspace/dados-antigos", headers: host });
+  assert.ok(existsSync(join(dados, "notas.migrado")) && existsSync(join(dados, "backup.migrado")));
+});
+
 test("copiarConferindo detecta tamanho diferente", () => {
   const raiz = criarPastaTemporaria("copia");
   pastas.push(raiz);
@@ -115,7 +127,7 @@ test("falha ao renomear projetos/ desfaz o app.db.migrado", async () => {
   );
   const r = await app.inject({ method: "POST", url: "/api/workspace", headers: host, payload: { local } });
   assert.equal(r.statusCode, 500);
-  assert.equal(r.json().erro, "A conversão dos dados antigos falhou: busy. Os dados originais continuam em dados/.");
+  assert.equal(r.json().erro, "A conversão dos dados antigos falhou: Arquivo em uso por outro programa. Os dados originais continuam em dados/.");
   assert.ok(existsSync(join(dados, "app.db")));
   assert.equal(existsSync(join(dados, "app.db.migrado")), false);
   assert.ok(existsSync(join(dados, "projetos", "leo-e-o-dragao", "dossie.json")));
