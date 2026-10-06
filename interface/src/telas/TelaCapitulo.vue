@@ -9,7 +9,6 @@ import SeletorModelo from "../componentes/SeletorModelo.vue";
 import { usarProjetoAtual } from "../estado/usarProjetoAtual";
 import { usarTarefas } from "../estado/usarTarefas";
 import { avisar } from "../estado/usarAvisos";
-import { formatarMil } from "../formatos";
 
 interface Problema {
   tipo: string;
@@ -49,9 +48,10 @@ function rotuloVersao(versao: ResumoVersao): string {
   return partes.join(" · ");
 }
 
-// Contexto de trabalho é potência de 2 (32.768): mostrado como "32 mil".
+// "Contexto: 30% (9.800 de 32.768)": números exatos, para não parecer estourado sem estar.
 function textoContexto(tokens: number, numCtx: number): string {
-  return `Contexto: ${formatarMil(tokens)} de ${Math.round(numCtx / 1024)} mil`;
+  const percentual = Math.round((tokens / numCtx) * 100);
+  return `Contexto: ${percentual}% (${tokens.toLocaleString("pt-BR")} de ${numCtx.toLocaleString("pt-BR")})`;
 }
 
 async function carregar(escolher?: number) {

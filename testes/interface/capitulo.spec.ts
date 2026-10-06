@@ -13,7 +13,7 @@ test("cenas, versões, refazer com outro modelo, continuidade e aprovação com 
   await expect(cenas.first()).toContainText("Léo, Brisa");
   await expect(cenas.first()).toContainText("Léo e Brisa na beira do lago seco");
   await expect(page.getByText("Duração estimada: 8 min de 8 min")).toBeVisible();
-  await expect(page.getByLabel("Versão")).toContainText(/v1 · gemma4:12b-it-qat · [\d,]+ s · Contexto: [\d,]+ mil de 32 mil/);
+  await expect(page.getByLabel("Versão")).toContainText(/v1 · gemma4:12b-it-qat · [\d,]+ s · Contexto: \d+% \([\d.]+ de 32\.768\)/);
 
   await page.getByLabel("O que corrigir").fill("Brisa precisa aparecer mais");
   await page.getByLabel("Gerar com").selectOption("qwen3.6:latest");
@@ -41,6 +41,7 @@ test("versão com possível corte de contexto mostra alerta", async ({ page, req
   await projetoComRoteiro(request);
   await page.goto("/capitulos/1");
   await expect(page.getByText("Possível corte de contexto nesta versão")).toBeVisible();
+  await expect(page.getByLabel("Versão")).toContainText("Contexto: 82% (26.768 de 32.768)");
 });
 
 test("versão gerada com parte do modelo na CPU mostra o aviso", async ({ page, request }) => {
