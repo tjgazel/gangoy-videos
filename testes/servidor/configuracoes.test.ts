@@ -42,6 +42,15 @@ test("secret nunca volta na API", async () => {
   assert.equal(ler.json().clientSecretSalvo, true);
 });
 
+test("página de retorno do OAuth leva à rota /configuracoes e não depende do estilo antigo", async () => {
+  const r = await app.inject({ url: "/api/youtube/oauth/retorno?error=access_denied", headers: host });
+  assert.equal(r.statusCode, 400);
+  assert.match(r.body, /Você cancelou a autorização no Google\./);
+  assert.match(r.body, /<a href="\/configuracoes">Voltar para Configurações<\/a>/);
+  assert.match(r.body, /<style>/);
+  assert.doesNotMatch(r.body, /estilo\.css|#configuracoes/);
+});
+
 test("secret vazio mantém o atual", async () => {
   const r = await app.inject({ method: "PUT", url: "/api/configuracoes/youtube", headers: host, payload: { clientId: "b", clientSecret: "" } });
   assert.equal(r.statusCode, 200);

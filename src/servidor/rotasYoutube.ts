@@ -13,21 +13,30 @@ function escaparHtml(texto: string): string {
   return texto.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 }
 
-// Página exibida no navegador ao voltar do Google; retorna sozinha para a aba Configurações.
+// Estilo próprio, nas cores do tema escuro: a página não depende dos arquivos da interface.
+const ESTILO_RETORNO = `
+body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: #0f1218; color: #e6e9f0;
+  font: 14px/1.5 "Segoe UI", system-ui, -apple-system, "Noto Sans", "Ubuntu", sans-serif; }
+.cartao { max-width: 480px; margin: 24px; padding: 24px 28px; background: #1b2030; border: 1px solid #252b3c; border-radius: 10px; }
+h1 { margin: 0 0 8px; font-size: 18px; }
+.sucesso { color: #34d399; }
+.erro { color: #f87171; }
+a { color: #3b82f6; }`;
+
+// Página exibida no navegador ao voltar do Google; retorna sozinha para a tela de Configurações.
 function paginaRetorno(resposta: FastifyReply, sucesso: boolean, mensagem: string) {
-  const cor = sucesso ? "#1e7a46" : "#c0392b";
   return resposta
     .code(sucesso ? 200 : 400)
     .type("text/html; charset=utf-8")
     .send(`<!doctype html>
 <html lang="pt-BR"><head><meta charset="utf-8"><title>Gangoy Vídeos</title>
-${sucesso ? '<meta http-equiv="refresh" content="3;url=/#configuracoes">' : ""}
-<link rel="stylesheet" href="/estilo.css"></head>
-<body><main><div class="cartao">
-<h2 style="color:${cor}">${sucesso ? "Conta conectada" : "Não foi possível conectar"}</h2>
+${sucesso ? '<meta http-equiv="refresh" content="3;url=/configuracoes">' : ""}
+<style>${ESTILO_RETORNO}</style></head>
+<body><main class="cartao">
+<h1 class="${sucesso ? "sucesso" : "erro"}">${sucesso ? "Conta conectada" : "Não foi possível conectar"}</h1>
 <p>${escaparHtml(mensagem)}</p>
-<p><a href="/#configuracoes">Voltar para Configurações</a></p>
-</div></main></body></html>`);
+<p><a href="/configuracoes">Voltar para Configurações</a></p>
+</main></body></html>`);
 }
 
 export function registrarRotasYoutube(app: FastifyInstance): void {
