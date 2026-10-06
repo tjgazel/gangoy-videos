@@ -1,6 +1,6 @@
 import { test, after } from "node:test";
 import assert from "node:assert/strict";
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, symlinkSync, writeFileSync } from "node:fs";
 import { join, parse } from "node:path";
 import { listarPastas, criarPasta, listarRaizes } from "../../src/workspace/navegadorPastas.js";
 import { ErroAplicacao } from "../../src/nucleo/erros.js";
@@ -23,6 +23,22 @@ test("lista só subpastas, sem ocultas, em ordem", () => {
   assert.deepEqual(listagem.pastas.map((pasta) => pasta.nome), ["A", "b"]);
   assert.equal(listagem.pastas[0]!.caminho, join(base, "A"));
   assert.equal(listagem.pai, tmp);
+});
+
+test("mostra links e junções que apontam para pastas; pula os quebrados e os de arquivo", () => {
+  const base = join(tmp, "links");
+  const alvo = join(tmp, "alvo-do-link");
+  mkdirSync(join(base, "normal"), { recursive: true });
+  mkdirSync(alvo, { recursive: true });
+  writeFileSync(join(tmp, "arquivo-alvo.txt"), "x");
+  // Junção no Windows (não exige administrador); link de pasta no Linux.
+  const tipo = process.platform === "win32" ? "junction" : "dir";
+  symlinkSync(alvo, join(base, "OneDrive"), tipo);
+  symlinkSync(join(tmp, "nao-existe"), join(base, "quebrado"), tipo);
+  if (process.platform !== "win32") symlinkSync(join(tmp, "arquivo-alvo.txt"), join(base, "link-de-arquivo"));
+  const listagem = listarPastas(base);
+  assert.deepEqual(listagem.pastas.map((pasta) => pasta.nome), ["normal", "OneDrive"]);
+  assert.equal(listagem.pastas[1]!.caminho, join(base, "OneDrive"));
 });
 
 test("pai da raiz é null", () => {

@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, readdirSync, type Dirent } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, statSync, type Dirent } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, isAbsolute, join, resolve } from "node:path";
 import { ErroAplicacao } from "../nucleo/erros.js";
@@ -52,7 +52,9 @@ export function listarPastas(caminho: string, ler: (caminho: string) => Dirent[]
   const pastas = entradas
     .filter((entrada) => {
       try {
-        return entrada.isDirectory();
+        if (entrada.isDirectory()) return true;
+        // Links e junções (ex.: OneDrive): vale o destino; link quebrado lança e é pulado.
+        return entrada.isSymbolicLink() && statSync(join(atual, entrada.name)).isDirectory();
       } catch {
         return false; // entrada que não dá para inspecionar é pulada
       }
