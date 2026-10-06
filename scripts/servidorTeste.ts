@@ -1,11 +1,17 @@
 // Servidor para os testes de interface (Playwright): pastas temporárias e Ollama falso.
 // As rotas /__teste/* existem só aqui, nunca no servidor real.
-import { mkdirSync } from "node:fs";
+import { mkdirSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { criarApp } from "../src/servidor/app.js";
 import { fecharBanco } from "../src/banco/banco.js";
 import { definirOpcoesExecucao, obterOpcoesExecucao } from "../src/nucleo/opcoesExecucao.js";
-import { abrirWorkspaceConfigurada, criarOuReconhecerWorkspace } from "../src/workspace/workspace.js";
+import {
+  abrirWorkspaceConfigurada,
+  ARQUIVO_BANCO,
+  ARQUIVO_MARCADOR,
+  criarOuReconhecerWorkspace,
+  obterPastaWorkspace,
+} from "../src/workspace/workspace.js";
 import { aguardarFilaOciosa, iniciarFila, prepararFilaAoIniciar } from "../src/tarefas/fila.js";
 import { iniciarOllamaFalso, MODELOS_PADRAO } from "../testes/apoio/ollamaFalso.js";
 import { respostaPadraoOllama } from "../testes/apoio/respostasOllama.js";
@@ -43,6 +49,16 @@ app.post<{ Body: { atrasoMs?: number; promptEvalCount?: number; gpuParcial?: boo
   falso.definir({ atrasoMs: requisicao.body?.atrasoMs ?? 0, promptEvalCount: requisicao.body?.promptEvalCount });
   // 70% na GPU e 30% na CPU, para testar o aviso de lentidão.
   if (requisicao.body?.gpuParcial) falso.definir({ modelos: MODELOS_PADRAO.map((m) => ({ ...m, tamanho: 10, tamanhoVram: 7 })) });
+  return { ok: true };
+});
+
+// Simula o disco que sumiu (sem marcador) ou o banco apagado (marcador sem gangoy.db).
+app.post<{ Body: { remover: "marcador" | "banco" } }>("/__teste/estragar-workspace", async (requisicao) => {
+  const pasta = obterPastaWorkspace();
+  await aguardarFilaOciosa();
+  fecharBanco();
+  const nomes = requisicao.body.remover === "marcador" ? [ARQUIVO_MARCADOR] : [ARQUIVO_BANCO, `${ARQUIVO_BANCO}-wal`, `${ARQUIVO_BANCO}-shm`];
+  for (const nome of nomes) rmSync(join(pasta, nome), { force: true });
   return { ok: true };
 });
 
