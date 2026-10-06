@@ -50,3 +50,11 @@ test("Esc no diálogo de confirmação não apaga nada", async ({ page, request 
   await expect(dialogo).toBeHidden();
   await expect(page.getByRole("button", { name: "Apagar dados antigos já convertidos" })).toHaveCount(1);
 });
+
+test("o diálogo de apagar mostra um item por linha", async ({ page, request }) => {
+  await request.post("/__teste/reiniciar", { data: { comWorkspace: true, comDadosAntigos: true } });
+  await page.goto("/configuracoes");
+  await page.getByRole("button", { name: "Apagar dados antigos já convertidos" }).click();
+  const descricao = page.getByRole("alertdialog").locator("[data-slot=alert-dialog-description]");
+  await expect(descricao).toHaveCSS("white-space", "pre-line");
+});

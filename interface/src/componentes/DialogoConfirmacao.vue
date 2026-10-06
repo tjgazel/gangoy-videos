@@ -32,7 +32,7 @@ function aoMudarAberto(aberto: boolean) {
     <AlertDialogContent>
       <AlertDialogHeader>
         <AlertDialogTitle>{{ exibido?.titulo }}</AlertDialogTitle>
-        <AlertDialogDescription>{{ exibido?.texto }}</AlertDialogDescription>
+        <AlertDialogDescription class="whitespace-pre-line">{{ exibido?.texto }}</AlertDialogDescription>
       </AlertDialogHeader>
       <AlertDialogFooter>
         <AlertDialogCancel>Voltar</AlertDialogCancel>

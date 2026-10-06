@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { BookOpen, Clapperboard, ClipboardCheck, Film, FolderKanban, Settings } from "@lucide/vue";
+import { watch } from "vue";
 import { useRoute } from "vue-router";
 import {
   Sidebar,
@@ -11,10 +12,15 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  useSidebar,
 } from "@/components/ui/sidebar";
 import ModoTema from "./ModoTema.vue";
 
 const rota = useRoute();
+const { setOpenMobile } = useSidebar();
+
+// Na janela estreita o menu é uma gaveta: fecha ao escolher uma tela.
+watch(() => rota.path, () => setOpenMobile(false));
 
 const itens = [
   { rota: "/producao", texto: "Produção", icone: Clapperboard },
