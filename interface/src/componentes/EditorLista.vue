@@ -1,5 +1,8 @@
 <script setup lang="ts" generic="T">
 // Lista editável: adicionar, remover e reordenar. O conteúdo de cada item vem do slot.
+import { ArrowDown, ArrowUp, Plus, Trash2 } from "@lucide/vue";
+import { Button } from "@/components/ui/button";
+
 const props = defineProps<{ modelValue: T[]; rotuloItem: string; novo: () => T }>();
 const emitir = defineEmits<{ "update:modelValue": [itens: T[]] }>();
 
@@ -17,38 +20,26 @@ function mover(indice: number, deslocamento: number) {
 </script>
 
 <template>
-  <div class="editor-lista">
-    <fieldset v-for="(item, indice) in modelValue" :key="indice" class="item">
-      <legend>{{ rotuloItem }} {{ indice + 1 }}</legend>
+  <div class="grid gap-3">
+    <fieldset v-for="(item, indice) in modelValue" :key="indice" class="grid gap-3 rounded-xl border bg-card p-4">
+      <legend class="px-1 text-sm font-medium text-muted-foreground">{{ rotuloItem }} {{ indice + 1 }}</legend>
       <slot name="item" :item="item" :indice="indice" />
-      <div class="acoes">
-        <button type="button" class="botao" :disabled="indice === 0" @click="mover(indice, -1)">Subir</button>
-        <button type="button" class="botao" :disabled="indice === modelValue.length - 1" @click="mover(indice, 1)">Descer</button>
-        <button
+      <div class="flex flex-wrap gap-2">
+        <Button type="button" variant="outline" size="sm" :disabled="indice === 0" @click="mover(indice, -1)"><ArrowUp /> Subir</Button>
+        <Button type="button" variant="outline" size="sm" :disabled="indice === modelValue.length - 1" @click="mover(indice, 1)"><ArrowDown /> Descer</Button>
+        <Button
           type="button"
-          class="botao perigo"
+          variant="destructive"
+          size="sm"
           :aria-label="`Remover ${rotuloItem.toLowerCase()} ${indice + 1}`"
           @click="atualizar(modelValue.filter((_, i) => i !== indice))"
         >
-          Remover
-        </button>
+          <Trash2 /> Remover
+        </Button>
       </div>
     </fieldset>
-    <button type="button" class="botao" @click="atualizar([...modelValue, novo()])">Adicionar {{ rotuloItem.toLowerCase() }}</button>
+    <Button type="button" variant="outline" class="justify-self-start" @click="atualizar([...modelValue, novo()])">
+      <Plus /> Adicionar {{ rotuloItem.toLowerCase() }}
+    </Button>
   </div>
 </template>
-
-<style scoped>
-.editor-lista { display: grid; gap: 10px; }
-.item {
-  display: grid;
-  gap: 10px;
-  border: 1px solid var(--cartao-borda);
-  border-radius: 8px;
-  padding: 10px 12px 12px;
-  margin: 0;
-}
-legend { color: var(--texto-suave); font-size: 13px; padding: 0 4px; }
-.acoes { display: flex; gap: 6px; justify-content: flex-end; }
-.editor-lista > .botao { justify-self: start; }
-</style>

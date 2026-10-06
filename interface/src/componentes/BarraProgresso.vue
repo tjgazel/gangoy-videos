@@ -1,31 +1,12 @@
 <script setup lang="ts">
-defineProps<{ valor: number; rotulo?: string }>();
+import { computed } from "vue";
+import { Progress } from "@/components/ui/progress";
+
+const props = defineProps<{ valor: number; rotulo?: string }>();
+// Mantém um pedaço visível mesmo no começo da tarefa.
+const preenchido = computed(() => Math.max(3, Math.min(100, props.valor)));
 </script>
 
 <template>
-  <div
-    class="barra"
-    role="progressbar"
-    :aria-valuenow="valor"
-    aria-valuemin="0"
-    aria-valuemax="100"
-    :aria-label="rotulo ?? 'Progresso'"
-  >
-    <span :style="{ width: `${Math.max(3, Math.min(100, valor))}%` }"></span>
-  </div>
+  <Progress :model-value="preenchido" :aria-label="rotulo ?? 'Progresso'" />
 </template>
-
-<style scoped>
-.barra {
-  height: 4px;
-  border-radius: 2px;
-  background: var(--cartao-borda);
-  overflow: hidden;
-}
-span {
-  display: block;
-  height: 100%;
-  background: var(--destaque);
-  transition: width 0.4s ease;
-}
-</style>

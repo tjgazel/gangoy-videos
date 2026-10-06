@@ -2,6 +2,10 @@
 import { computed } from "vue";
 import { useRouter } from "vue-router";
 import { chamarApi } from "../api/cliente";
+import { BookOpen, Clapperboard, Sparkles } from "@lucide/vue";
+import { Button } from "@/components/ui/button";
+import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
+import CabecalhoTela from "../componentes/CabecalhoTela.vue";
 import ColunaQuadro from "../componentes/ColunaQuadro.vue";
 import CartaoCapitulo from "../componentes/CartaoCapitulo.vue";
 import { COLUNAS, colunaDoCapitulo } from "../estado/colunasQuadro";
@@ -34,23 +38,28 @@ async function gerar(numero: number) {
   }
 }
 </script>
-
 <template>
-  <section class="tela">
-    <header class="tela-cabecalho">
-      <h1>Produção</h1>
-      <RouterLink v-if="projetoAtual && capitulos.length" to="/dossie" class="botao">Ver dossiê</RouterLink>
-    </header>
+  <section class="mx-auto grid max-w-7xl gap-6">
+    <CabecalhoTela titulo="Produção">
+      <Button v-if="projetoAtual && capitulos.length" as-child variant="outline">
+        <RouterLink to="/dossie"><BookOpen /> Ver dossiê</RouterLink>
+      </Button>
+    </CabecalhoTela>
 
-    <p v-if="!projetoAtual" class="vazio">Crie um projeto na tela Projetos para começar.</p>
+    <p v-if="!projetoAtual" class="text-muted-foreground">Crie um projeto na tela Projetos para começar.</p>
 
-    <div v-else-if="carregado && !capitulos.length" class="painel inicio">
-      <h2>{{ projetoAtual.nome }} ainda não tem capítulos</h2>
-      <p class="vazio">Escreva o enredo e o sistema propõe sinopse, personagens e a divisão em capítulos. Você revisa antes de gravar.</p>
-      <RouterLink to="/producao/planejamento" class="botao principal">Planejar história</RouterLink>
-    </div>
+    <Empty v-else-if="carregado && !capitulos.length" class="border">
+      <EmptyHeader>
+        <EmptyMedia variant="icon"><Clapperboard /></EmptyMedia>
+        <EmptyTitle>{{ projetoAtual.nome }} ainda não tem capítulos</EmptyTitle>
+        <EmptyDescription>Escreva o enredo e o sistema propõe sinopse, personagens e a divisão em capítulos. Você revisa antes de gravar.</EmptyDescription>
+      </EmptyHeader>
+      <EmptyContent>
+        <Button as-child><RouterLink to="/producao/planejamento"><Sparkles /> Planejar história</RouterLink></Button>
+      </EmptyContent>
+    </Empty>
 
-    <div v-else class="quadro">
+    <div v-else class="grid grid-cols-1 items-start gap-4 md:grid-cols-2 xl:grid-cols-3">
       <ColunaQuadro v-for="coluna in porColuna" :key="coluna.id" :titulo="coluna.titulo" :quantidade="coluna.itens.length">
         <CartaoCapitulo
           v-for="{ capitulo, tarefa } in coluna.itens"
@@ -64,16 +73,3 @@ async function gerar(numero: number) {
     </div>
   </section>
 </template>
-
-<style scoped>
-.quadro {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(220px, 1fr));
-  gap: 12px;
-  align-items: start;
-}
-.inicio { display: grid; gap: 10px; justify-items: start; max-width: 640px; }
-@media (max-width: 1100px) {
-  .quadro { grid-template-columns: repeat(2, minmax(220px, 1fr)); }
-}
-</style>

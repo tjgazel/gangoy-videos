@@ -1,12 +1,17 @@
 <!doctype html>
-<html lang="pt-BR" data-tema="escuro">
+<html lang="pt-BR" class="dark">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Gangoy Vídeos</title>
     <script>
       // Aplica o tema salvo antes de desenhar a página (evita piscar no tema errado).
-      document.documentElement.dataset.tema = localStorage.getItem("gangoy.tema") === "claro" ? "claro" : "escuro";
+      // Os mesmos valores do usarModoTema: "light", "dark" e "auto" (e os antigos "claro" e "escuro").
+      (function () {
+        var salvo = localStorage.getItem("gangoy.tema");
+        var claro = salvo === "light" || salvo === "claro" || (salvo === "auto" && matchMedia("(prefers-color-scheme: light)").matches);
+        document.documentElement.classList.toggle("dark", !claro);
+      })();
     </script>
   </head>
   <body>
