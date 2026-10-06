@@ -1,5 +1,5 @@
 import { bancoAberto, obterBanco } from "../banco/banco.js";
-import { ErroAplicacao } from "../nucleo/erros.js";
+import { descreverErro, ErroAplicacao } from "../nucleo/erros.js";
 import { emitirEvento } from "./eventos.js";
 import type { ContextoExecucao, Executor, StatusTarefa, Tarefa, TipoTarefa } from "./tipos.js";
 
@@ -237,7 +237,7 @@ async function executar(tarefa: Tarefa): Promise<void> {
       if (tarefa.status !== "cancelada") atualizar(tarefa, { status: "cancelada", concluidaEm: new Date().toISOString() });
     } else {
       if (!(erro instanceof ErroAplicacao)) console.error(erro);
-      atualizar(tarefa, { status: "falhou", erro: (erro as Error).message, concluidaEm: new Date().toISOString() });
+      atualizar(tarefa, { status: "falhou", erro: descreverErro(erro), concluidaEm: new Date().toISOString() });
     }
   } finally {
     atual = null;

@@ -6,7 +6,7 @@ import { resolve } from "node:path";
 import { z } from "zod";
 import { lerConfiguracaoApp } from "../nucleo/configuracaoApp.js";
 import { definirOpcoesExecucao, obterOpcoesExecucao, type OpcoesExecucao } from "../nucleo/opcoesExecucao.js";
-import { ErroAplicacao } from "../nucleo/erros.js";
+import { ErroAplicacao, traduzirErroSistema } from "../nucleo/erros.js";
 import { bancoAberto, fecharBanco } from "../banco/banco.js";
 import { iniciarFila, pararFila, prepararFilaAoIniciar, registrarExecutor } from "../tarefas/fila.js";
 import { moverWorkspace } from "../workspace/mover.js";
@@ -90,7 +90,9 @@ export async function criarApp(opcoes: Partial<OpcoesExecucao> = {}): Promise<Fa
       return resposta.code(status).send({ erro: (erro as Error).message });
     }
     requisicao.log.error(erro);
-    return resposta.code(500).send({ erro: "Erro inesperado. Veja o log do servidor." });
+    // Arquivo travado, sem permissão, disco cheio...: a explicação em pt-BR ajuda mais que "erro inesperado".
+    const doSistema = traduzirErroSistema(erro);
+    return resposta.code(500).send({ erro: doSistema ?? "Erro inesperado. Veja o log do servidor." });
   });
 
   abrirWorkspaceConfigurada();

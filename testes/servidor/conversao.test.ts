@@ -127,7 +127,7 @@ test("falha ao renomear projetos/ desfaz o app.db.migrado", async () => {
   );
   const r = await app.inject({ method: "POST", url: "/api/workspace", headers: host, payload: { local } });
   assert.equal(r.statusCode, 500);
-  assert.equal(r.json().erro, "A conversão dos dados antigos falhou: busy. Os dados originais continuam em dados/.");
+  assert.equal(r.json().erro, "A conversão dos dados antigos falhou: Arquivo em uso por outro programa. Os dados originais continuam em dados/.");
   assert.ok(existsSync(join(dados, "app.db")));
   assert.equal(existsSync(join(dados, "app.db.migrado")), false);
   assert.ok(existsSync(join(dados, "projetos", "leo-e-o-dragao", "dossie.json")));

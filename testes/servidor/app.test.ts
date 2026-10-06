@@ -52,6 +52,17 @@ test("ErroAplicacao vira { erro } com o status", async () => {
   await app.close();
 });
 
+test("erro do sistema de arquivos vira 500 com a mensagem em português", async () => {
+  const app = await criarApp({ porta: PORTA, pastaDados: tmp });
+  app.get("/api/sistema/__fs", async () => {
+    throw Object.assign(new Error("EPERM: operation not permitted, rename"), { code: "EPERM", path: "/ws/projeto" });
+  });
+  const r = await app.inject({ url: "/api/sistema/__fs", headers: { host: `localhost:${PORTA}` } });
+  assert.equal(r.statusCode, 500);
+  assert.deepEqual(r.json(), { erro: "Sem permissão para acessar: /ws/projeto" });
+  await app.close();
+});
+
 test("ZodError vira 400 com a primeira mensagem", async () => {
   const app = await criarApp({ porta: PORTA, pastaDados: tmp });
   app.get("/api/sistema/__zod", async () => z.string().min(3, "Curto").parse("a"));

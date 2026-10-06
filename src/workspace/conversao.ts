@@ -2,7 +2,7 @@ import { DatabaseSync } from "node:sqlite";
 import { copyFileSync, existsSync, mkdirSync, readdirSync, renameSync, rmSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { lerConfiguracaoApp } from "../nucleo/configuracaoApp.js";
-import { ErroAplicacao } from "../nucleo/erros.js";
+import { descreverErro, ErroAplicacao } from "../nucleo/erros.js";
 import { obterOpcoesExecucao } from "../nucleo/opcoesExecucao.js";
 import { copiarConferindo, medirPasta } from "./copiaConferida.js";
 import { ARQUIVO_BANCO } from "./workspace.js";
@@ -88,7 +88,7 @@ export function converterDadosAntigos(
       }
     }
   } catch (erro) {
-    const motivo = (erro as Error).message.replace(/\.$/, "");
+    const motivo = descreverErro(erro).replace(/\.$/, "");
     throw new ErroAplicacao(
       `A conversão dos dados antigos falhou: ${motivo}. Os dados originais continuam em dados/.`,
       500,
@@ -114,7 +114,7 @@ export function converterDadosAntigos(
       }
     }
     throw new ErroAplicacao(
-      `A conversão dos dados antigos falhou: ${(erro as Error).message.replace(/\.$/, "")}. Os dados originais continuam em dados/.`,
+      `A conversão dos dados antigos falhou: ${descreverErro(erro).replace(/\.$/, "")}. Os dados originais continuam em dados/.`,
       500,
     );
   }
