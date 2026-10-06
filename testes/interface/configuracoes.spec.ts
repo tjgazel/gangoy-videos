@@ -80,3 +80,24 @@ test("mostra o contexto padrão do Ollama: em vigor e, se diferente, o configura
   await expect(cartao).toContainText("262.144 tokens");
   await expect(cartao).toContainText("Configurado no app do Ollama: 65.536 tokens. Reinicie o Ollama para esse valor valer.");
 });
+
+test("modal explica como criar as credenciais do YouTube no Google Cloud", async ({ page, request }) => {
+  await request.post("/__teste/reiniciar", { data: { comWorkspace: true } });
+  await page.goto("/configuracoes");
+  const botao = page.getByRole("button", { name: "Como obter as credenciais" });
+  expect((await botao.boundingBox())!.width).toBeLessThan(260); // não ocupa a linha inteira
+  await botao.click();
+  const modal = page.getByRole("dialog", { name: "Como criar as credenciais do YouTube" });
+  await expect(modal).toBeVisible();
+  for (const texto of ["YouTube Data API v3", "Desktop app", "Usuários de teste", "Client ID", "7 dias", "privados"]) {
+    await expect(modal).toContainText(texto);
+  }
+  // Os passos aparecem numerados (item de lista de verdade, não um grid sem marcador).
+  await expect(modal.locator("ol > li").first()).toHaveCSS("display", "list-item");
+  await expect(modal.locator("ol > li")).toHaveCount(5);
+  // Links oficiais do Google, sempre em outra aba e sem enviar a origem.
+  await expect(modal.locator("a[href^='https://developers.google.com/']").first()).toBeVisible();
+  await expect(modal.locator("a:not([target=_blank][rel~=noopener][rel~=noreferrer])")).toHaveCount(0);
+  await page.keyboard.press("Escape");
+  await expect(modal).toBeHidden();
+});

@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import AjudaCredenciaisYoutube from "../componentes/AjudaCredenciaisYoutube.vue";
 import CabecalhoTela from "../componentes/CabecalhoTela.vue";
 import Campo from "../componentes/Campo.vue";
 import SeletorModelo from "../componentes/SeletorModelo.vue";
@@ -233,6 +234,7 @@ onMounted(async () => {
           Crie uma credencial OAuth do tipo "App para computador" no Google Cloud, com a YouTube Data API v3 ativada,
           e adicione sua conta como usuário de teste. Enquanto o app do Google Cloud não for verificado, os vídeos só podem ser enviados como privados.
         </CardDescription>
+        <AjudaCredenciaisYoutube />
       </CardHeader>
       <CardContent class="grid gap-5">
         <form class="grid gap-4" novalidate @submit.prevent="salvarCredenciais">
