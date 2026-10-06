@@ -32,6 +32,8 @@ export interface OpcoesOllamaFalso {
   atrasoMs?: number;
   // Força o prompt_eval_count de todas as respostas (ex.: simular possível corte).
   promptEvalCount?: number;
+  // Teto de contexto do Ollama (ex.: variável de ambiente): o /api/ps reporta o menor entre o pedido, o máximo do modelo e este.
+  limiteContexto?: number;
 }
 
 export interface OllamaFalso {
@@ -64,6 +66,7 @@ export async function iniciarOllamaFalso(opcoesIniciais: OpcoesOllamaFalso = {})
   const opcoes: OpcoesOllamaFalso = { modelos: MODELOS_PADRAO, responderChat: respostaPadraoOllama, ...opcoesIniciais };
   const pedidos: CorpoChatFalso[] = [];
   let ultimoModelo: string | null = null;
+  let ultimoNumCtx = 0;
 
   const servidor = createServer(async (requisicao, resposta) => {
     const modelos = opcoes.modelos ?? MODELOS_PADRAO;
@@ -84,7 +87,16 @@ export async function iniciarOllamaFalso(opcoesIniciais: OpcoesOllamaFalso = {})
       const carregado = modelos.find((m) => m.nome === ultimoModelo);
       return json(resposta, 200, {
         models: carregado
-          ? [{ name: carregado.nome, model: carregado.nome, size: carregado.tamanho ?? 7_000_000_000, size_vram: carregado.tamanhoVram ?? carregado.tamanho ?? 7_000_000_000 }]
+          ? [
+              {
+                name: carregado.nome,
+                model: carregado.nome,
+                size: carregado.tamanho ?? 7_000_000_000,
+                size_vram: carregado.tamanhoVram ?? carregado.tamanho ?? 7_000_000_000,
+                // Como o Ollama real: reduz em silêncio o contexto pedido ao máximo do modelo.
+                context_length: Math.min(ultimoNumCtx || carregado.contextoMaximo, carregado.contextoMaximo, opcoes.limiteContexto ?? Infinity),
+              },
+            ]
           : [],
       });
     }
@@ -100,6 +112,7 @@ export async function iniciarOllamaFalso(opcoesIniciais: OpcoesOllamaFalso = {})
     if (caminho === "/api/chat") {
       pedidos.push(corpo as CorpoChatFalso);
       ultimoModelo = corpo.model;
+      ultimoNumCtx = corpo.options?.num_ctx ?? 0;
       const dados = (opcoes.responderChat ?? respostaPadraoOllama)(corpo as CorpoChatFalso);
       const atraso = dados.atrasoMs ?? opcoes.atrasoMs ?? 0;
       if (atraso > 0) await new Promise((pronto) => setTimeout(pronto, atraso));

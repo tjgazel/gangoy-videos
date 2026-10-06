@@ -58,3 +58,15 @@ test("o diálogo de apagar mostra um item por linha", async ({ page, request }) 
   const descricao = page.getByRole("alertdialog").locator("[data-slot=alert-dialog-description]");
   await expect(descricao).toHaveCSS("white-space", "pre-line");
 });
+
+test("avisa quando o modelo leve aceita menos que o contexto de trabalho", async ({ page, request }) => {
+  await request.post("/__teste/reiniciar", { data: { comWorkspace: true } });
+  await page.goto("/configuracoes");
+  await escolherOpcao(page, "Modelo principal", "gemma4:12b-it-qat");
+  await escolherOpcao(page, "Modelo leve", "gemma4:e4b-it-qat");
+  await page.getByLabel("Contexto de trabalho (tokens)").fill("200000");
+  await expect(page.getByText("O modelo leve aceita até 131.072 tokens: nas chamadas dele o contexto será 131.072.")).toBeVisible();
+  await page.getByLabel("Contexto de trabalho (tokens)").fill("100000");
+  await expect(page.getByText("O modelo leve aceita até")).toHaveCount(0);
+  await expect(page.getByText("o “Context length” do Ollama não o limita")).toBeVisible();
+});

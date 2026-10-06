@@ -104,3 +104,13 @@ export function resolverModelo(
   if (tipo === "leve") return sistema.modeloLeve;
   return opcoes.modeloProjeto?.trim() || sistema.modeloPrincipal;
 }
+
+// Máximo de contexto do modelo (null se o Ollama não informa). O Ollama reduz em silêncio um num_ctx maior que ele.
+export async function contextoMaximoDoModelo(nome: string): Promise<number | null> {
+  try {
+    const modelos = await listarModelos();
+    return modelos.find((m) => normalizarNomeModelo(m.nome) === normalizarNomeModelo(nome))?.contextoMaximo ?? null;
+  } catch {
+    return null;
+  }
+}
