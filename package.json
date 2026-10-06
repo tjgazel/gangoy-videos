@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "description": "Gangoy Vídeos: gerador local de histórias em vídeo para o YouTube",
   "private": true,
+  "license": "AGPL-3.0-or-later",
   "type": "module",
   "scripts": {
     "dev": "concurrently -n servidor,interface \"tsx watch src/servidor/servidor.ts\" \"vite --config interface/vite.config.ts\"",
