@@ -1,0 +1,15 @@
+node_modules/
+dados/
+ferramentas/
+*.log
+
+# Configuração local do Claude Code (de cada máquina)
+.claude/settings.local.json
+
+# Maquetes do brainstorming (locais)
+.superpowers/
+
+# Saídas de build e de testes de interface
+interface/dist/
+test-results/
+playwright-report/

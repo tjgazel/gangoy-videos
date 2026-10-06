@@ -1,0 +1,21 @@
+{
+  "porta": 3000,
+  "ollama": {
+    "url": "http://127.0.0.1:11434",
+    "modeloPadrao": "gemma4:12b-it-qat",
+    "modeloLeve": "gemma4:e4b-it-qat"
+  },
+  "youtube": {
+    "limiteDuracaoMinutos": 15,
+    "limiteDuracaoObservacao": "Contas sem verificacao: 15 min. Contas verificadas: ate 12 horas.",
+    "privacidadesPermitidas": [
+      "private",
+      "unlisted",
+      "public"
+    ],
+    "privacidadePadrao": "private"
+  },
+  "caminhos": {
+    "ferramentas": "ferramentas"
+  }
+}

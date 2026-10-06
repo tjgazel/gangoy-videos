@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="pt-BR" data-tema="escuro">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Gangoy Vídeos</title>
+    <script>
+      // Aplica o tema salvo antes de desenhar a página (evita piscar no tema errado).
+      document.documentElement.dataset.tema = localStorage.getItem("gangoy.tema") === "claro" ? "claro" : "escuro";
+    </script>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
