@@ -7,6 +7,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Separator } from "@/components/ui/separator";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import AjudaCredenciaisYoutube from "../componentes/AjudaCredenciaisYoutube.vue";
 import CabecalhoTela from "../componentes/CabecalhoTela.vue";
@@ -198,32 +199,83 @@ onMounted(async () => {
 
     <Card>
       <CardHeader>
-        <CardTitle><h2 class="flex items-center gap-2"><Cpu class="size-4" /> Modelos</h2></CardTitle>
-        <CardDescription>Escolha entre os modelos já instalados no Ollama. Para instalar outros, use o próprio Ollama.</CardDescription>
+        <CardTitle><h2 class="flex items-center gap-2"><Cpu class="size-4" /> Ollama</h2></CardTitle>
       </CardHeader>
-      <CardContent>
-        <form class="grid gap-4" novalidate @submit.prevent="salvarModelos">
-          <SeletorModelo v-model="formularioModelos.modeloPrincipal" :permitir-padrao="false" rotulo="Modelo principal" />
-          <SeletorModelo v-model="formularioModelos.modeloLeve" :permitir-padrao="false" rotulo="Modelo leve" />
-          <Campo rotulo="Contexto de trabalho (tokens)">
-            <Input :model-value="formularioModelos.contextoTrabalho" type="number" step="1024" @update:model-value="formularioModelos.contextoTrabalho = Number($event)" />
-            <template v-if="principalEscolhido?.contextoMaximo" #dica>
-              O modelo principal aceita até {{ formatarNumero(principalEscolhido.contextoMaximo) }} tokens. Contexto maior usa mais memória da placa de vídeo.
-              O app envia este contexto em cada chamada: o “Context length” do Ollama não o limita.
-              <template v-if="leveAceitaMenos">
-                O modelo leve aceita até {{ formatarNumero(leveAceitaMenos) }} tokens: nas chamadas dele o contexto será {{ formatarNumero(leveAceitaMenos) }}.
+      <CardContent class="grid gap-6">
+          <dl class="grid gap-1.5 text-sm">
+            <div class="grid gap-3 sm:grid-cols-[9rem_1fr]"><dt class="text-muted-foreground">Endereço</dt><dd>{{ status?.ollama.url }}</dd></div>
+            <div class="grid gap-3 sm:grid-cols-[9rem_1fr]"><dt class="text-muted-foreground">Situação</dt><dd>{{ status?.ollama.online ? `Online, versão ${status.ollama.versao}` : "Fora do ar" }}</dd></div>
+            <div class="grid gap-3 sm:grid-cols-[9rem_1fr]">
+              <dt class="text-muted-foreground">Contexto padrão</dt>
+              <dd class="grid gap-1">
+                <span v-if="contextoOllama?.emVigor" class="tabular-nums">{{ formatarNumero(contextoOllama.emVigor) }} tokens</span>
+                <span v-else-if="contextoOllama?.configurado" class="tabular-nums">
+                  {{ formatarNumero(contextoOllama.configurado) }} tokens (configurado; não foi possível confirmar se já está em vigor)
+                </span>
+                <span v-else class="text-muted-foreground">Não foi possível ler (só o app do Ollama para Windows guarda esse valor)</span>
+                <span
+                  v-if="contextoOllama?.emVigor && contextoOllama.configurado && contextoOllama.configurado !== contextoOllama.emVigor"
+                  class="flex items-start gap-1.5 text-amber-600 dark:text-amber-400"
+                >
+                  <TriangleAlert class="mt-0.5 size-4 shrink-0" />
+                  Configurado no app do Ollama: {{ formatarNumero(contextoOllama.configurado) }} tokens. Reinicie o Ollama para esse valor valer.
+                </span>
+                <small class="text-muted-foreground">Vale só para quem não pede um contexto; o Gangoy Vídeos envia o seu a cada chamada.</small>
+              </dd>
+            </div>
+          </dl>
+
+        <Separator />
+
+        <section class="grid gap-4">
+          <div class="grid gap-1">
+            <h3 class="font-semibold">Modelos escolhidos</h3>
+            <p class="text-sm text-muted-foreground">Escolha entre os modelos já instalados no Ollama. Para instalar outros, use o próprio Ollama.</p>
+          </div>
+          <form class="grid gap-4" novalidate @submit.prevent="salvarModelos">
+            <SeletorModelo v-model="formularioModelos.modeloPrincipal" :permitir-padrao="false" rotulo="Modelo principal" />
+            <SeletorModelo v-model="formularioModelos.modeloLeve" :permitir-padrao="false" rotulo="Modelo leve" />
+            <Campo rotulo="Contexto de trabalho (tokens)">
+              <Input :model-value="formularioModelos.contextoTrabalho" type="number" step="1024" @update:model-value="formularioModelos.contextoTrabalho = Number($event)" />
+              <template v-if="principalEscolhido?.contextoMaximo" #dica>
+                O modelo principal aceita até {{ formatarNumero(principalEscolhido.contextoMaximo) }} tokens. Contexto maior usa mais memória da placa de vídeo.
+                O app envia este contexto em cada chamada: o “Context length” do Ollama não o limita.
+                <template v-if="leveAceitaMenos">
+                  O modelo leve aceita até {{ formatarNumero(leveAceitaMenos) }} tokens: nas chamadas dele o contexto será {{ formatarNumero(leveAceitaMenos) }}.
+                </template>
               </template>
-            </template>
-          </Campo>
-          <Alert v-if="principalEscolhido?.percentualCpu">
-            <TriangleAlert />
-            <AlertDescription>
-              {{ principalEscolhido.nome }}: {{ principalEscolhido.percentualCpu }}% na CPU (mais lento). Reduza o contexto ou use um modelo menor.
-            </AlertDescription>
-          </Alert>
-          <Alert v-if="erroModelos" variant="destructive"><AlertDescription>{{ erroModelos }}</AlertDescription></Alert>
-          <Button type="submit" class="justify-self-start">Salvar modelos</Button>
-        </form>
+            </Campo>
+            <Alert v-if="principalEscolhido?.percentualCpu">
+              <TriangleAlert />
+              <AlertDescription>
+                {{ principalEscolhido.nome }}: {{ principalEscolhido.percentualCpu }}% na CPU (mais lento). Reduza o contexto ou use um modelo menor.
+              </AlertDescription>
+            </Alert>
+            <Alert v-if="erroModelos" variant="destructive"><AlertDescription>{{ erroModelos }}</AlertDescription></Alert>
+            <Button type="submit" class="justify-self-start">Salvar modelos</Button>
+          </form>
+        </section>
+        <Separator />
+
+        <section class="grid gap-3">
+          <h3 class="font-semibold">Modelos instalados</h3>
+          <Table v-if="modelos.length">
+            <TableHeader>
+              <TableRow>
+                <TableHead>Modelo</TableHead><TableHead>Tamanho</TableHead><TableHead>Parâmetros</TableHead><TableHead>Quantização</TableHead><TableHead>Contexto máximo</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              <TableRow v-for="modelo in modelos" :key="modelo.nome">
+                <TableCell class="font-medium">{{ modelo.nome }}</TableCell>
+                <TableCell class="tabular-nums">{{ formatarBytes(modelo.tamanhoBytes) }}</TableCell>
+                <TableCell>{{ modelo.parametros }}</TableCell>
+                <TableCell>{{ modelo.quantizacao }}</TableCell>
+                <TableCell class="tabular-nums">{{ modelo.contextoMaximo ? formatarNumero(modelo.contextoMaximo) : "?" }}</TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
+        </section>
       </CardContent>
     </Card>
 
@@ -268,51 +320,6 @@ onMounted(async () => {
       </CardContent>
     </Card>
 
-    <Card>
-      <CardHeader>
-        <CardTitle><h2 class="flex items-center gap-2"><Cpu class="size-4" /> Ollama</h2></CardTitle>
-      </CardHeader>
-      <CardContent class="grid gap-4">
-        <dl class="grid gap-1.5 text-sm">
-          <div class="grid gap-3 sm:grid-cols-[9rem_1fr]"><dt class="text-muted-foreground">Endereço</dt><dd>{{ status?.ollama.url }}</dd></div>
-          <div class="grid gap-3 sm:grid-cols-[9rem_1fr]"><dt class="text-muted-foreground">Situação</dt><dd>{{ status?.ollama.online ? `Online, versão ${status.ollama.versao}` : "Fora do ar" }}</dd></div>
-          <div class="grid gap-3 sm:grid-cols-[9rem_1fr]">
-            <dt class="text-muted-foreground">Contexto padrão</dt>
-            <dd class="grid gap-1">
-              <span v-if="contextoOllama?.emVigor" class="tabular-nums">{{ formatarNumero(contextoOllama.emVigor) }} tokens</span>
-              <span v-else-if="contextoOllama?.configurado" class="tabular-nums">
-                {{ formatarNumero(contextoOllama.configurado) }} tokens (configurado; não foi possível confirmar se já está em vigor)
-              </span>
-              <span v-else class="text-muted-foreground">Não foi possível ler (só o app do Ollama para Windows guarda esse valor)</span>
-              <span
-                v-if="contextoOllama?.emVigor && contextoOllama.configurado && contextoOllama.configurado !== contextoOllama.emVigor"
-                class="flex items-start gap-1.5 text-amber-600 dark:text-amber-400"
-              >
-                <TriangleAlert class="mt-0.5 size-4 shrink-0" />
-                Configurado no app do Ollama: {{ formatarNumero(contextoOllama.configurado) }} tokens. Reinicie o Ollama para esse valor valer.
-              </span>
-              <small class="text-muted-foreground">Vale só para quem não pede um contexto; o Gangoy Vídeos envia o seu a cada chamada.</small>
-            </dd>
-          </div>
-        </dl>
-        <Table v-if="modelos.length">
-          <TableHeader>
-            <TableRow>
-              <TableHead>Modelo</TableHead><TableHead>Tamanho</TableHead><TableHead>Parâmetros</TableHead><TableHead>Quantização</TableHead><TableHead>Contexto máximo</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            <TableRow v-for="modelo in modelos" :key="modelo.nome">
-              <TableCell class="font-medium">{{ modelo.nome }}</TableCell>
-              <TableCell class="tabular-nums">{{ formatarBytes(modelo.tamanhoBytes) }}</TableCell>
-              <TableCell>{{ modelo.parametros }}</TableCell>
-              <TableCell>{{ modelo.quantizacao }}</TableCell>
-              <TableCell class="tabular-nums">{{ modelo.contextoMaximo ? formatarNumero(modelo.contextoMaximo) : "?" }}</TableCell>
-            </TableRow>
-          </TableBody>
-        </Table>
-      </CardContent>
-    </Card>
 
     <PainelLateral :aberto="painelMover" titulo="Mudar a workspace de lugar" @fechar="painelMover = false">
       <div class="grid gap-4">

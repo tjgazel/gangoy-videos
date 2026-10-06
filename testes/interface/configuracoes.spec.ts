@@ -4,7 +4,7 @@ import { avisos, escolherOpcao, valorDoSeletor } from "./apoio.js";
 test("seções visíveis; modelos e contexto salvos; erro do servidor; credenciais", async ({ page, request }) => {
   await request.post("/__teste/reiniciar", { data: { comWorkspace: true } });
   await page.goto("/configuracoes");
-  for (const secao of ["Workspace", "Modelos", "YouTube", "Ollama"]) {
+  for (const secao of ["Workspace", "Ollama", "YouTube"]) {
     await expect(page.getByRole("heading", { level: 2, name: secao })).toBeVisible();
   }
   await expect(page.getByRole("button", { name: "Apagar dados antigos já convertidos" })).toHaveCount(0);
@@ -100,4 +100,29 @@ test("modal explica como criar as credenciais do YouTube no Google Cloud", async
   await expect(modal.locator("a:not([target=_blank][rel~=noopener][rel~=noreferrer])")).toHaveCount(0);
   await page.keyboard.press("Escape");
   await expect(modal).toBeHidden();
+});
+
+test("Ollama e Modelos são um cartão só, nesta ordem: situação, modelos escolhidos e modelos instalados", async ({ page, request }) => {
+  await request.post("/__teste/reiniciar", { data: { comWorkspace: true } });
+  await page.goto("/configuracoes");
+  await expect(page.getByRole("heading", { level: 2, name: "Modelos" })).toHaveCount(0);
+  const cartao = page.locator("[data-slot=card]").filter({ has: page.getByRole("heading", { level: 2, name: "Ollama" }) });
+  await expect(cartao).toHaveCount(1);
+  for (const dentro of [
+    cartao.getByText("Contexto padrão", { exact: true }),
+    cartao.getByRole("combobox", { name: "Modelo principal" }),
+    cartao.getByRole("combobox", { name: "Modelo leve" }),
+    cartao.getByLabel("Contexto de trabalho (tokens)"),
+    cartao.getByRole("button", { name: "Salvar modelos" }),
+    cartao.getByRole("heading", { level: 3, name: "Modelos instalados" }),
+    cartao.getByRole("columnheader", { name: "Contexto máximo" }),
+  ]) {
+    await expect(dentro).toBeVisible();
+  }
+  const y = async (alvo: import("@playwright/test").Locator) => (await alvo.boundingBox())!.y;
+  const situacao = await y(cartao.getByText("Contexto padrão", { exact: true }));
+  const escolhidos = await y(cartao.getByRole("combobox", { name: "Modelo principal" }));
+  const instalados = await y(cartao.getByRole("heading", { level: 3, name: "Modelos instalados" }));
+  expect(situacao).toBeLessThan(escolhidos);
+  expect(escolhidos).toBeLessThan(instalados);
 });
