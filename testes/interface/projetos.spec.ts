@@ -33,9 +33,18 @@ test("criar, editar, validar e excluir projeto", async ({ page }) => {
   await expect(cartao).toContainText("6 min");
 
   await cartao.getByRole("button", { name: "Excluir" }).click();
-  const dialogo = page.getByRole("dialog").filter({ hasText: "Excluir o projeto" });
+  const dialogo = page.getByRole("alertdialog").filter({ hasText: "Excluir o projeto" });
   await expect(dialogo).toContainText("A pasta do projeto vai para a lixeira da workspace (.lixeira) e pode ser recuperada.");
   await dialogo.getByRole("button", { name: "Excluir projeto" }).click();
   await expect(cartao).toBeHidden();
   await expect(page.getByText("Nenhum projeto ainda.")).toBeVisible();
+});
+
+test("Esc fecha o painel lateral", async ({ page }) => {
+  await page.goto("/projetos");
+  await page.getByRole("button", { name: "Novo projeto" }).click();
+  const painel = page.getByRole("dialog", { name: "Novo projeto" });
+  await expect(painel).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(painel).toBeHidden();
 });

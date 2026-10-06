@@ -1,55 +1,24 @@
 <script setup lang="ts">
+import { X } from "@lucide/vue";
+import { Button } from "@/components/ui/button";
+import { Sheet, SheetClose, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+
 defineProps<{ aberto: boolean; titulo: string }>();
 const emitir = defineEmits<{ fechar: [] }>();
 </script>
 
 <template>
-  <div v-if="aberto" class="fundo" @click.self="emitir('fechar')" @keydown.esc="emitir('fechar')">
-    <aside class="painel-lateral" role="dialog" :aria-label="titulo">
-      <header>
-        <h2>{{ titulo }}</h2>
-        <button type="button" class="fechar" aria-label="Fechar" @click="emitir('fechar')">×</button>
-      </header>
-      <div class="conteudo">
+  <Sheet :open="aberto" @update:open="(valor: boolean) => !valor && emitir('fechar')">
+    <SheetContent side="right" class="overflow-y-auto sm:max-w-md" :show-close-button="false" :aria-describedby="undefined">
+      <SheetHeader class="flex-row items-center justify-between">
+        <SheetTitle>{{ titulo }}</SheetTitle>
+        <SheetClose as-child>
+          <Button variant="ghost" size="icon-sm" aria-label="Fechar"><X /></Button>
+        </SheetClose>
+      </SheetHeader>
+      <div class="px-4 pb-4">
         <slot />
       </div>
-    </aside>
-  </div>
+    </SheetContent>
+  </Sheet>
 </template>
-
-<style scoped>
-.fundo {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.4);
-  z-index: 30;
-  display: flex;
-  justify-content: flex-end;
-}
-.painel-lateral {
-  width: min(480px, 100vw);
-  height: 100%;
-  overflow: auto;
-  background: var(--cartao);
-  border-left: 1px solid var(--cartao-borda);
-  box-shadow: var(--sombra-flutuante);
-  display: flex;
-  flex-direction: column;
-}
-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 16px 20px;
-  border-bottom: 1px solid var(--cartao-borda);
-}
-.fechar {
-  background: none;
-  border: 0;
-  color: var(--texto-suave);
-  font-size: 22px;
-  cursor: pointer;
-  line-height: 1;
-}
-.conteudo { padding: 18px 20px; }
-</style>

@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { projetoComRoteiro } from "./apoio.js";
+import { avisos, projetoComRoteiro } from "./apoio.js";
 
 test("revisão lista o roteiro para aprovar e abre o capítulo", async ({ page, request }) => {
   await request.post("/__teste/reiniciar", { data: { comWorkspace: true } });
@@ -29,7 +29,7 @@ test("dossiê por seções; salvar; Ver JSON mostra o erro com o caminho do camp
   const personagem = page.getByRole("group", { name: "Personagem 1" });
   await personagem.getByLabel("Aparência fixa").fill("Menino de 11 anos com chapéu de palha.");
   await page.getByRole("button", { name: "Salvar dossiê" }).click();
-  await expect(page.getByRole("status").filter({ hasText: "Dossiê salvo" })).toBeVisible();
+  await expect(avisos(page).getByText("Dossiê salvo")).toBeVisible();
   await page.reload();
   await expect(page.getByRole("group", { name: "Personagem 1" }).getByLabel("Aparência fixa")).toHaveValue("Menino de 11 anos com chapéu de palha.");
 

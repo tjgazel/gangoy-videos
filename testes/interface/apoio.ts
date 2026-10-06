@@ -35,3 +35,8 @@ export async function escolherOpcao(page: Page, rotulo: string | RegExp, opcao: 
 export function valorDoSeletor(page: Page, rotulo: string | RegExp): Locator {
   return page.getByRole("combobox", { name: rotulo });
 }
+
+// Região de avisos (toasts) do vue-sonner, rotulada em Aviso.vue.
+export function avisos(page: Page): Locator {
+  return page.getByRole("region", { name: /^Avisos/ });
+}
