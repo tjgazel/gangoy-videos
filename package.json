@@ -6,7 +6,7 @@
   "license": "AGPL-3.0-or-later",
   "type": "module",
   "scripts": {
-    "dev": "concurrently -n servidor,interface \"tsx watch src/servidor/servidor.ts\" \"vite --config interface/vite.config.ts\"",
+    "dev": "concurrently -n servidor,interface \"tsx watch src/servidor/servidor.ts --desenvolvimento\" \"vite --config interface/vite.config.ts\"",
     "construir:interface": "vite build --config interface/vite.config.ts",
     "iniciar": "npm run construir:interface && tsx src/servidor/servidor.ts",
     "verificar": "tsc --noEmit && vue-tsc --noEmit -p interface/tsconfig.json",

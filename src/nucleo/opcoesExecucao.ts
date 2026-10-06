@@ -6,13 +6,15 @@ export interface OpcoesExecucao {
   pastaDados: string;
   urlOllama: string;
   porta: number;
+  // npm run dev: a interface vem do Vite (porta 5173), que também precisa ser aceito.
+  desenvolvimento: boolean;
 }
 
 let atuais: OpcoesExecucao | null = null;
 
 function padroes(): OpcoesExecucao {
   const config = lerConfiguracaoApp();
-  return { pastaDados: resolve("dados"), urlOllama: config.ollama.url, porta: config.porta };
+  return { pastaDados: resolve("dados"), urlOllama: config.ollama.url, porta: config.porta, desenvolvimento: false };
 }
 
 export function definirOpcoesExecucao(parcial: Partial<OpcoesExecucao>): void {
