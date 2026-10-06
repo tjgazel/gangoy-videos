@@ -142,6 +142,31 @@ test("progresso: 'Gerando roteiro' e, na ampliação, 'Ampliando o texto'", asyn
   assert.equal(chamadas, 2);
 });
 
+test("ampliação que não cabe no contexto salva o roteiro já gerado", async () => {
+  const id = await projetoPlanejado();
+  salvarConfiguracao("contexto_trabalho", "12288");
+  let chamadas = 0;
+  falso.definir({
+    responderChat: (corpo) => {
+      if (!Object.keys(corpo.format?.properties ?? {}).includes("cenas")) return respostaPadraoOllama(corpo);
+      chamadas++;
+      // Poucas palavras (pede ampliação) e descrições longas (o pedido de ampliação não cabe).
+      const cenas = Array.from({ length: 3 }, () => ({
+        narracao: "Léo andou pela vila com Brisa.",
+        personagensPresentes: ["Léo"],
+        descricaoVisual: "Vila seca vista de cima. ".repeat(300),
+      }));
+      return { conteudo: { titulo: "Curto", cenas } };
+    },
+  });
+  const tarefa = await concluir(await pedir("POST", `/api/projetos/${id}/capitulos/1/roteiro`));
+  assert.equal(tarefa.status, "concluida", tarefa.erro ?? "");
+  assert.equal(chamadas, 1);
+  const versao = (await pedir("GET", `/api/projetos/${id}/capitulos/1/versoes/1`)).json();
+  assert.equal(versao.roteiro.titulo, "Curto");
+  assert.equal(versao.roteiro.cenas.length, 3);
+});
+
 test("workspace some durante a geração → falhou com 'Workspace não encontrada em'", async () => {
   const id = await projetoPlanejado();
   falso.definir({ atrasoMs: 300 });
