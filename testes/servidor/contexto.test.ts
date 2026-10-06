@@ -13,6 +13,7 @@ let ambiente: AmbienteTeste;
 const esquema = z.object({ ok: z.boolean() });
 const mensagens: Mensagem[] = [{ role: "user", content: "Responda ok." }];
 const MODELO = "gemma4:12b-it-qat";
+const MODELO_LEVE = "gemma4:e4b-it-qat"; // aceita até 131.072 tokens
 
 before(async () => {
   falso = await iniciarOllamaFalso();
@@ -103,4 +104,23 @@ test("usa streaming e junta os pedaços da resposta", async () => {
   assert.equal(falso.pedidos[0]!.stream, true);
   assert.deepEqual(dados, { ok: true });
   assert.equal(medicao.tokensPrompt, 1234);
+});
+
+test("contexto de trabalho acima do máximo do modelo chamado é reduzido ao máximo dele", async () => {
+  salvarConfiguracao("contexto_trabalho", "200000");
+  const { medicao } = await gerarJsonIa(MODELO_LEVE, mensagens, esquema, { tipo: "continuidade" });
+  assert.equal(falso.pedidos[0]!.options.num_ctx, 131072);
+  assert.equal(medicao.numCtx, 131072);
+  // O modelo principal aceita os 200.000 pedidos.
+  await gerarJsonIa(MODELO, mensagens, esquema, { tipo: "continuidade" });
+  assert.equal(falso.pedidos[1]!.options.num_ctx, 200000);
+});
+
+test("o contexto que o Ollama carregou de fato, se menor que o pedido, vira o da medição", async () => {
+  salvarConfiguracao("contexto_trabalho", "65536");
+  falso.definir({ limiteContexto: 40000, promptEvalCount: 35000 });
+  const { medicao } = await gerarJsonIa(MODELO, mensagens, esquema, { tipo: "roteiro" });
+  assert.equal(falso.pedidos[0]!.options.num_ctx, 65536);
+  assert.equal(medicao.numCtx, 40000);
+  assert.equal(medicao.possivelCorte, true); // 35.000 + 6.000 de reserva passam de 40.000
 });

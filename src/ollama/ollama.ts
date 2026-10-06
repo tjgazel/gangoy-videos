@@ -11,6 +11,7 @@ import {
   registrarAmostraTokens,
   type TipoChamada,
 } from "./contexto.js";
+import { contextoMaximoDoModelo } from "./modelos.js";
 
 export interface Mensagem {
   role: "system" | "user" | "assistant";
@@ -35,15 +36,20 @@ export function ultimoPercentualCpu(modelo: string): number | null {
   return usoCpu.get(modelo) ?? null;
 }
 
-async function medirUsoCpu(url: string, modelo: string): Promise<number | null> {
+// O que o Ollama realmente carregou: fração na CPU e contexto (o /api/ps mostra o contexto efetivo, que pode
+// ser menor que o pedido).
+async function medirCarga(url: string, modelo: string): Promise<{ percentualCpu: number | null; contextoCarregado: number | null }> {
   try {
     const resposta = await fetch(`${url}/api/ps`, { signal: AbortSignal.timeout(3000) });
-    const dados = (await resposta.json()) as { models?: { name: string; size: number; size_vram: number }[] };
+    const dados = (await resposta.json()) as { models?: { name: string; size: number; size_vram: number; context_length?: number }[] };
     const carregado = dados.models?.find((m) => m.name === modelo);
-    if (!carregado || !carregado.size) return null;
-    return Math.round((1 - carregado.size_vram / carregado.size) * 100);
+    if (!carregado) return { percentualCpu: null, contextoCarregado: null };
+    return {
+      percentualCpu: carregado.size ? Math.round((1 - carregado.size_vram / carregado.size) * 100) : null,
+      contextoCarregado: carregado.context_length ?? null,
+    };
   } catch {
-    return null;
+    return { percentualCpu: null, contextoCarregado: null };
   }
 }
 
@@ -102,7 +108,9 @@ export async function gerarJsonIa<T extends z.ZodType>(
   const urlBase = obterOpcoesExecucao().urlOllama;
   const url = `${urlBase}/api/chat`;
   const formato = z.toJSONSchema(esquema);
-  const numCtx = obterConfiguracoesSistema().contextoTrabalho;
+  // O Ollama reduz em silêncio o num_ctx ao máximo do modelo; usar o valor real mantém a proteção do contexto honesta.
+  const maximoModelo = await contextoMaximoDoModelo(modelo);
+  const numCtx = Math.min(obterConfiguracoesSistema().contextoTrabalho, maximoModelo ?? Infinity);
   const reserva = RESERVA_RESPOSTA[opcoes.tipo];
   const tentativas = opcoes.tentativas ?? 3;
   const historico: Mensagem[] = [...mensagens];
@@ -141,8 +149,9 @@ export async function gerarJsonIa<T extends z.ZodType>(
 
     const { conteudo, tokensPrompt, tokensResposta } = await lerRespostaEmPartes(resposta);
     registrarAmostraTokens(caracteres, tokensPrompt);
-    const percentualCpu = await medirUsoCpu(urlBase, modelo);
+    const { percentualCpu, contextoCarregado } = await medirCarga(urlBase, modelo);
     usoCpu.set(modelo, percentualCpu);
+    const numCtxReal = contextoCarregado && contextoCarregado < numCtx ? contextoCarregado : numCtx;
 
     try {
       const resultado = esquema.safeParse(JSON.parse(conteudo));
@@ -151,11 +160,11 @@ export async function gerarJsonIa<T extends z.ZodType>(
           dados: resultado.data,
           medicao: {
             modelo,
-            numCtx,
+            numCtx: numCtxReal,
             tokensEstimados,
             tokensPrompt,
             tokensResposta,
-            possivelCorte: tokensPrompt >= numCtx - reserva,
+            possivelCorte: tokensPrompt >= numCtxReal - reserva,
             percentualCpu,
             duracaoSegundos: Math.round((performance.now() - inicio) / 100) / 10,
           },

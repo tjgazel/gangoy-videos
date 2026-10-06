@@ -74,6 +74,14 @@ async function apagarDadosAntigos() {
 // ---- Modelos ----
 const formularioModelos = reactive<ConfiguracoesSistema>({ modeloPrincipal: "", modeloLeve: "", contextoTrabalho: 32768 });
 const erroModelos = ref("");
+const leveEscolhido = computed(() =>
+  modelos.value.find((m) => normalizarNomeModelo(m.nome) === normalizarNomeModelo(formularioModelos.modeloLeve)),
+);
+// O Ollama reduz em silêncio o contexto ao máximo de cada modelo; o servidor faz o mesmo (min) em cada chamada.
+const leveAceitaMenos = computed(() => {
+  const maximo = leveEscolhido.value?.contextoMaximo;
+  return maximo && Number(formularioModelos.contextoTrabalho) > maximo ? maximo : null;
+});
 const principalEscolhido = computed(() =>
   modelos.value.find((m) => normalizarNomeModelo(m.nome) === normalizarNomeModelo(formularioModelos.modeloPrincipal)),
 );
@@ -193,6 +201,10 @@ onMounted(async () => {
             <Input :model-value="formularioModelos.contextoTrabalho" type="number" step="1024" @update:model-value="formularioModelos.contextoTrabalho = Number($event)" />
             <template v-if="principalEscolhido?.contextoMaximo" #dica>
               O modelo principal aceita até {{ formatarNumero(principalEscolhido.contextoMaximo) }} tokens. Contexto maior usa mais memória da placa de vídeo.
+              O app envia este contexto em cada chamada: o “Context length” do Ollama não o limita.
+              <template v-if="leveAceitaMenos">
+                O modelo leve aceita até {{ formatarNumero(leveAceitaMenos) }} tokens: nas chamadas dele o contexto será {{ formatarNumero(leveAceitaMenos) }}.
+              </template>
             </template>
           </Campo>
           <Alert v-if="principalEscolhido?.percentualCpu">
