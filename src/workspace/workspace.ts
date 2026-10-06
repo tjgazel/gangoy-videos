@@ -93,9 +93,8 @@ export function criarOuReconhecerWorkspace(local: string): { caminho: string; cr
 
 export function apontarWorkspace(caminho: string): string {
   const encontrada = existsSync(caminho) ? localizarWorkspace(caminho) : null;
-  if (!encontrada || !existsSync(join(encontrada, ARQUIVO_BANCO))) {
-    throw new ErroAplicacao("Esta pasta não é uma workspace do Gangoy Vídeos", 400);
-  }
+  if (!encontrada) throw new ErroAplicacao("Esta pasta não é uma workspace do Gangoy Vídeos", 400);
+  if (!temBanco(encontrada)) throw new ErroAplicacao(mensagemSemBanco(encontrada), 409);
   abrir(encontrada);
   return encontrada;
 }

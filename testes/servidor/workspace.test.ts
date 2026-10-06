@@ -119,6 +119,15 @@ test("reconhecer workspace sem gangoy.db → 409, sem criar banco vazio", async 
   assert.equal(existsSync(join(caminho, "gangoy.db")), false);
 });
 
+test("apontar workspace sem gangoy.db → 409 explicando o que falta", async () => {
+  const { local, app } = await novoAmbiente();
+  const { caminho } = criarOuReconhecerWorkspace(local);
+  apagarBanco(caminho);
+  const r = await app.inject({ method: "POST", url: "/api/workspace/apontar", headers: host, payload: { caminho } });
+  assert.equal(r.statusCode, 409);
+  assert.deepEqual(r.json(), { erro: semBanco(caminho) });
+});
+
 test("sem workspace configurada → 503", async () => {
   const { app } = await novoAmbiente();
   const r = await app.inject({ url: "/api/projetos", headers: host });
