@@ -27,8 +27,15 @@ export function nomeDaTarefa(tarefa: Tarefa): string {
   }
 }
 
+// O status de uma tarefa só avança. Uma resposta atrasada da API (ou uma lista recarregada) pode trazer um
+// retrato anterior à conclusão que o evento ao vivo já avisou; esse retrato não pode reverter a tarefa.
+function regride(local: Tarefa | undefined, nova: Tarefa): boolean {
+  return Boolean(local && FINAIS.includes(local.status) && !FINAIS.includes(nova.status));
+}
+
 function aplicar(nova: Tarefa): void {
   const anterior = tarefas.value.find((tarefa) => tarefa.id === nova.id);
+  if (regride(anterior, nova)) return;
   // Guarda o status de antes: o Object.assign abaixo sobrescreve o objeto.
   const statusAnterior = anterior?.status;
   if (anterior) Object.assign(anterior, nova);
@@ -44,7 +51,9 @@ function aplicar(nova: Tarefa): void {
 
 async function recarregar(): Promise<void> {
   try {
-    const lista = await chamarApi<Tarefa[]>("/api/tarefas");
+    const recebida = await chamarApi<Tarefa[]>("/api/tarefas");
+    const locais = new Map(tarefas.value.map((tarefa) => [tarefa.id, tarefa]));
+    const lista = recebida.map((tarefa) => (regride(locais.get(tarefa.id), tarefa) ? (locais.get(tarefa.id) as Tarefa) : tarefa));
     tarefas.value = lista;
     for (const tarefa of lista) {
       if (FINAIS.includes(tarefa.status)) {
