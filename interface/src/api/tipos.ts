@@ -162,3 +162,8 @@ export interface ConfiguracoesSistema {
   modeloLeve: string;
   contextoTrabalho: number;
 }
+
+export interface ContextoPadraoOllama {
+  emVigor: number | null;
+  configurado: number | null;
+}
