@@ -4,7 +4,18 @@ import { useRoute } from "vue-router";
 import { chamarApi } from "../api/cliente";
 import { aoEvento } from "../api/eventos";
 import type { Atualizacao, Capitulo, ResumoVersao, Tarefa, VersaoRoteiro } from "../api/tipos";
+import { ArrowLeft, Check, RefreshCw, ShieldCheck, Sparkles, TriangleAlert } from "@lucide/vue";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import BarraProgresso from "../componentes/BarraProgresso.vue";
+import CabecalhoTela from "../componentes/CabecalhoTela.vue";
+import Campo from "../componentes/Campo.vue";
 import SeletorModelo from "../componentes/SeletorModelo.vue";
 import { usarProjetoAtual } from "../estado/usarProjetoAtual";
 import { usarTarefas } from "../estado/usarTarefas";
@@ -65,7 +76,8 @@ async function carregar(escolher?: number) {
   retomarProposta();
 }
 
-async function escolherVersao() {
+async function escolherVersao(versao: unknown) {
+  versaoEscolhida.value = Number(versao);
   if (base.value && versaoEscolhida.value) {
     roteiro.value = await chamarApi<VersaoRoteiro>(`${base.value}/versoes/${versaoEscolhida.value}`);
   }
@@ -158,158 +170,145 @@ const cancelar = aoEvento("tarefa", (tarefa) => {
 onUnmounted(cancelar);
 watch([() => projetoAtual.value?.id, numero], () => void carregar(), { immediate: true });
 </script>
-
 <template>
-  <section class="tela">
-    <header class="tela-cabecalho">
-      <h1>Cap. {{ numero }} · {{ capitulo?.titulo ?? "" }}</h1>
-      <span v-if="capitulo?.status === 'aprovado'" class="etiqueta sucesso">Roteiro aprovado</span>
-      <span v-else-if="capitulo?.status === 'roteiro_gerado'" class="etiqueta alerta">Aguardando aprovação</span>
-      <RouterLink to="/producao" class="botao">Voltar ao quadro</RouterLink>
-    </header>
+  <section class="mx-auto grid max-w-6xl gap-6">
+    <CabecalhoTela :titulo="`Cap. ${numero} · ${capitulo?.titulo ?? ''}`">
+      <Badge v-if="capitulo?.status === 'aprovado'">Roteiro aprovado</Badge>
+      <Badge v-else-if="capitulo?.status === 'roteiro_gerado'" variant="outline">Aguardando aprovação</Badge>
+      <Button as-child variant="outline"><RouterLink to="/producao"><ArrowLeft /> Voltar ao quadro</RouterLink></Button>
+    </CabecalhoTela>
 
-    <div class="layout">
-      <div class="principal">
-        <div v-if="ativa" class="painel progresso">
-          <span>{{ ativa.status === "na_fila" ? "Na fila" : ativa.mensagem || "Executando" }}</span>
-          <BarraProgresso :valor="ativa.progresso" :rotulo="`Capítulo ${numero}`" />
-        </div>
+    <div class="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
+      <div class="grid gap-4">
+        <Card v-if="ativa">
+          <CardContent class="grid gap-2 text-sm text-muted-foreground">
+            <span>{{ ativa.status === "na_fila" ? "Na fila" : ativa.mensagem || "Executando" }}</span>
+            <BarraProgresso :valor="ativa.progresso" :rotulo="`Capítulo ${numero}`" />
+          </CardContent>
+        </Card>
 
         <template v-if="roteiro">
-          <label class="campo">
-            <span>Versão</span>
-            <select v-model.number="versaoEscolhida" aria-label="Versão" @change="escolherVersao">
-              <option v-for="versao in versoes" :key="versao.versao" :value="versao.versao">{{ rotuloVersao(versao) }}</option>
-            </select>
-          </label>
-          <p v-if="resumoAtual?.contexto?.possivelCorte" class="etiqueta erro alerta-corte">
-            Possível corte de contexto nesta versão: o pedido ficou colado no limite. Aumente o contexto de trabalho em Configurações e gere de novo.
-          </p>
-          <p v-if="resumoAtual?.contexto?.percentualCpu" class="etiqueta alerta alerta-corte">
-            {{ resumoAtual.modelo }}: {{ resumoAtual.contexto.percentualCpu }}% na CPU (mais lento). Reduza o contexto ou use um modelo menor.
-          </p>
-          <ol class="cenas" aria-label="Cenas">
-            <li v-for="(cena, indice) in roteiro.roteiro.cenas" :key="indice" class="cena">
-              <h3>Cena {{ indice + 1 }}</h3>
-              <p>{{ cena.narracao }}</p>
-              <dl>
-                <div><dt>Personagens</dt><dd>{{ cena.personagensPresentes.join(", ") }}</dd></div>
-                <div><dt>Imagem</dt><dd>{{ cena.descricaoVisual }}</dd></div>
-              </dl>
+          <div class="grid gap-2">
+            <Label>Versão</Label>
+            <Select :model-value="versaoEscolhida ?? undefined" @update:model-value="escolherVersao">
+              <SelectTrigger aria-label="Versão" class="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem v-for="versao in versoes" :key="versao.versao" :value="versao.versao">{{ rotuloVersao(versao) }}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <Alert v-if="resumoAtual?.contexto?.possivelCorte" variant="destructive">
+            <TriangleAlert />
+            <AlertDescription>
+              Possível corte de contexto nesta versão: o pedido ficou colado no limite. Aumente o contexto de trabalho em Configurações e gere de novo.
+            </AlertDescription>
+          </Alert>
+          <Alert v-if="resumoAtual?.contexto?.percentualCpu">
+            <TriangleAlert />
+            <AlertDescription>
+              {{ resumoAtual.modelo }}: {{ resumoAtual.contexto.percentualCpu }}% na CPU (mais lento). Reduza o contexto ou use um modelo menor.
+            </AlertDescription>
+          </Alert>
+          <ol class="grid gap-3" aria-label="Cenas">
+            <li v-for="(cena, indice) in roteiro.roteiro.cenas" :key="indice">
+              <Card>
+                <CardHeader><CardTitle><h3>Cena {{ indice + 1 }}</h3></CardTitle></CardHeader>
+                <CardContent class="grid gap-3">
+                  <p>{{ cena.narracao }}</p>
+                  <dl class="grid gap-1 text-sm">
+                    <div class="flex gap-3"><dt class="w-28 shrink-0 text-muted-foreground">Personagens</dt><dd>{{ cena.personagensPresentes.join(", ") }}</dd></div>
+                    <div class="flex gap-3"><dt class="w-28 shrink-0 text-muted-foreground">Imagem</dt><dd>{{ cena.descricaoVisual }}</dd></div>
+                  </dl>
+                </CardContent>
+              </Card>
             </li>
           </ol>
         </template>
-        <div v-else class="painel vazio-roteiro">
-          <p class="vazio">Este capítulo ainda não tem roteiro.</p>
-        </div>
+        <p v-else class="rounded-xl border p-6 text-muted-foreground">Este capítulo ainda não tem roteiro.</p>
       </div>
 
-      <aside class="lateral">
-        <div class="painel bloco">
-          <p v-if="roteiro && capitulo" class="numeros">
-            Duração estimada: {{ roteiro.minutosEstimados.toLocaleString("pt-BR") }} min de {{ capitulo.duracaoAlvoMinutos }} min
-          </p>
-          <p v-if="resumoAtual?.contexto" class="numeros" :class="{ atencao: usoContexto > 0.8 }">
-            {{ textoContexto(resumoAtual.contexto.tokensPrompt, resumoAtual.contexto.numCtx) }}
-          </p>
-          <SeletorModelo v-model="modeloGeracao" :permitir-padrao="true" rotulo-padrao="Modelo do projeto" rotulo="Gerar com" />
-          <button v-if="!roteiro" type="button" class="botao principal" :disabled="!!ativa" @click="gerar">Gerar roteiro</button>
-        </div>
+      <aside class="grid gap-4 lg:sticky lg:top-0">
+        <Card>
+          <CardContent class="grid gap-3">
+            <p v-if="roteiro && capitulo" class="tabular-nums">
+              Duração estimada: {{ roteiro.minutosEstimados.toLocaleString("pt-BR") }} min de {{ capitulo.duracaoAlvoMinutos }} min
+            </p>
+            <p v-if="resumoAtual?.contexto" class="tabular-nums" :class="usoContexto > 0.8 ? 'text-destructive' : ''">
+              {{ textoContexto(resumoAtual.contexto.tokensPrompt, resumoAtual.contexto.numCtx) }}
+            </p>
+            <SeletorModelo v-model="modeloGeracao" :permitir-padrao="true" rotulo-padrao="Modelo do projeto" rotulo="Gerar com" />
+            <Button v-if="!roteiro" type="button" :disabled="!!ativa" @click="gerar"><Sparkles /> Gerar roteiro</Button>
+          </CardContent>
+        </Card>
 
-        <form v-if="roteiro" class="painel bloco" @submit.prevent="refazer">
-          <label class="campo">
-            <span>O que corrigir</span>
-            <textarea v-model="instrucao" rows="3" placeholder="Ex.: o Pedro não pode morrer aqui; retome a cena do rio"></textarea>
-          </label>
-          <button type="submit" class="botao" :disabled="!!ativa || !instrucao.trim()">Refazer com esta instrução</button>
-        </form>
+        <Card v-if="roteiro">
+          <CardContent>
+            <form class="grid gap-3" @submit.prevent="refazer">
+              <Campo rotulo="O que corrigir">
+                <Textarea v-model="instrucao" rows="3" placeholder="Ex.: o Pedro não pode morrer aqui; retome a cena do rio" />
+              </Campo>
+              <Button type="submit" variant="outline" :disabled="!!ativa || !instrucao.trim()"><RefreshCw /> Refazer com esta instrução</Button>
+            </form>
+          </CardContent>
+        </Card>
 
-        <div v-if="roteiro" class="painel bloco">
-          <button type="button" class="botao" :disabled="!!ativa" @click="verificarContinuidade">Verificar continuidade</button>
-          <p v-if="problemas && !problemas.length" class="etiqueta sucesso">Nenhum problema encontrado</p>
-          <ul v-if="problemas?.length" class="problemas">
-            <li v-for="(problema, indice) in problemas" :key="indice">
-              <strong>{{ problema.descricao }}</strong>
-              <small>Sugestão: {{ problema.sugestao }}</small>
-            </li>
-          </ul>
-        </div>
+        <Card v-if="roteiro">
+          <CardContent class="grid gap-3">
+            <Button type="button" variant="outline" :disabled="!!ativa" @click="verificarContinuidade"><ShieldCheck /> Verificar continuidade</Button>
+            <Badge v-if="problemas && !problemas.length" class="justify-self-start">Nenhum problema encontrado</Badge>
+            <ul v-if="problemas?.length" class="grid gap-2 text-sm">
+              <li v-for="(problema, indice) in problemas" :key="indice" class="grid">
+                <strong>{{ problema.descricao }}</strong>
+                <small class="text-muted-foreground">Sugestão: {{ problema.sugestao }}</small>
+              </li>
+            </ul>
+          </CardContent>
+        </Card>
 
-        <div v-if="roteiro && capitulo?.status !== 'aprovado'" class="painel bloco">
-          <button v-if="!proposta" type="button" class="botao principal" :disabled="!!ativa" @click="proporAprovacao">Aprovar roteiro</button>
-          <form v-else class="bloco" @submit.prevent="confirmarAprovacao">
-            <h3>O que vira oficial no dossiê</h3>
-            <label class="campo"><span>Resumo do capítulo</span><textarea v-model="proposta.resumoCapitulo" rows="3"></textarea></label>
-            <fieldset v-if="proposta.novosFatos.length">
-              <legend>Fatos novos</legend>
-              <label v-for="fato in proposta.novosFatos" :key="fato" class="marcar">
-                <input type="checkbox" :checked="escolhidos.fatos.has(fato)" @change="alternar(escolhidos.fatos, fato)" />{{ fato }}
-              </label>
-            </fieldset>
-            <fieldset v-if="proposta.novosPersonagens.length">
-              <legend>Personagens novos</legend>
-              <label v-for="personagem in proposta.novosPersonagens" :key="personagem.nome" class="marcar">
-                <input type="checkbox" :checked="escolhidos.personagens.has(personagem.nome)" @change="alternar(escolhidos.personagens, personagem.nome)" />
-                {{ personagem.nome }}: {{ personagem.aparenciaFixa }}
-              </label>
-            </fieldset>
-            <fieldset v-if="proposta.fiosAbertos.length">
-              <legend>Fios abertos novos</legend>
-              <label v-for="fio in proposta.fiosAbertos" :key="fio" class="marcar">
-                <input type="checkbox" :checked="escolhidos.abertos.has(fio)" @change="alternar(escolhidos.abertos, fio)" />{{ fio }}
-              </label>
-            </fieldset>
-            <fieldset v-if="proposta.fiosResolvidos.length">
-              <legend>Fios resolvidos</legend>
-              <label v-for="fio in proposta.fiosResolvidos" :key="fio" class="marcar">
-                <input type="checkbox" :checked="escolhidos.resolvidos.has(fio)" @change="alternar(escolhidos.resolvidos, fio)" />{{ fio }}
-              </label>
-            </fieldset>
-            <div class="acoes">
-              <button type="button" class="botao" @click="proposta = null">Voltar</button>
-              <button type="submit" class="botao principal">Confirmar aprovação</button>
-            </div>
-          </form>
-        </div>
+        <Card v-if="roteiro && capitulo?.status !== 'aprovado'">
+          <CardContent class="grid gap-3">
+            <Button v-if="!proposta" type="button" :disabled="!!ativa" @click="proporAprovacao"><Check /> Aprovar roteiro</Button>
+            <form v-else class="grid gap-4" @submit.prevent="confirmarAprovacao">
+              <h3 class="font-semibold">O que vira oficial no dossiê</h3>
+              <Campo rotulo="Resumo do capítulo"><Textarea v-model="proposta.resumoCapitulo" rows="3" /></Campo>
+              <fieldset v-if="proposta.novosFatos.length" class="grid gap-2">
+                <legend class="mb-1 text-sm font-medium">Fatos novos</legend>
+                <Label v-for="fato in proposta.novosFatos" :key="fato" class="items-start font-normal">
+                  <Checkbox :model-value="escolhidos.fatos.has(fato)" @update:model-value="alternar(escolhidos.fatos, fato)" />
+                  {{ fato }}
+                </Label>
+              </fieldset>
+              <fieldset v-if="proposta.novosPersonagens.length" class="grid gap-2">
+                <legend class="mb-1 text-sm font-medium">Personagens novos</legend>
+                <Label v-for="personagem in proposta.novosPersonagens" :key="personagem.nome" class="items-start font-normal">
+                  <Checkbox :model-value="escolhidos.personagens.has(personagem.nome)" @update:model-value="alternar(escolhidos.personagens, personagem.nome)" />
+                  {{ personagem.nome }}: {{ personagem.aparenciaFixa }}
+                </Label>
+              </fieldset>
+              <fieldset v-if="proposta.fiosAbertos.length" class="grid gap-2">
+                <legend class="mb-1 text-sm font-medium">Fios abertos novos</legend>
+                <Label v-for="fio in proposta.fiosAbertos" :key="fio" class="items-start font-normal">
+                  <Checkbox :model-value="escolhidos.abertos.has(fio)" @update:model-value="alternar(escolhidos.abertos, fio)" />
+                  {{ fio }}
+                </Label>
+              </fieldset>
+              <fieldset v-if="proposta.fiosResolvidos.length" class="grid gap-2">
+                <legend class="mb-1 text-sm font-medium">Fios resolvidos</legend>
+                <Label v-for="fio in proposta.fiosResolvidos" :key="fio" class="items-start font-normal">
+                  <Checkbox :model-value="escolhidos.resolvidos.has(fio)" @update:model-value="alternar(escolhidos.resolvidos, fio)" />
+                  {{ fio }}
+                </Label>
+              </fieldset>
+              <div class="flex gap-2">
+                <Button type="button" variant="outline" @click="proposta = null">Voltar</Button>
+                <Button type="submit">Confirmar aprovação</Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
       </aside>
     </div>
   </section>
 </template>
-
-<style scoped>
-.layout { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 18px; align-items: start; }
-.principal { display: grid; gap: 14px; }
-.lateral { display: grid; gap: 12px; position: sticky; top: 70px; }
-.bloco { display: grid; gap: 10px; }
-.bloco p { margin: 0; }
-.progresso { display: grid; gap: 6px; color: var(--texto-suave); }
-.atencao { color: var(--alerta); }
-.alerta-corte { display: block; border-radius: 8px; padding: 8px 12px; }
-.cenas { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
-.cena {
-  display: grid;
-  gap: 6px;
-  padding: 12px 14px;
-  background: var(--cartao);
-  border: 1px solid var(--cartao-borda);
-  border-left: 3px solid var(--destaque);
-  border-radius: 8px;
-}
-.cena h3 { color: var(--texto-suave); font-size: 12px; font-weight: 600; }
-.cena p { margin: 0; max-width: 75ch; }
-.cena dl { margin: 0; display: grid; gap: 2px; font-size: 13px; }
-.cena dl div { display: flex; gap: 8px; }
-.cena dt { color: var(--texto-suave); min-width: 86px; }
-.cena dd { margin: 0; }
-.problemas { margin: 0; padding-left: 18px; display: grid; gap: 6px; }
-.problemas small { display: block; color: var(--texto-suave); }
-fieldset { border: 1px solid var(--cartao-borda); border-radius: 8px; padding: 8px 10px; display: grid; gap: 6px; margin: 0; }
-legend { color: var(--texto-suave); font-size: 13px; }
-.marcar { display: flex; gap: 8px; align-items: flex-start; }
-.marcar input { width: auto; margin-top: 4px; }
-.acoes { display: flex; gap: 8px; justify-content: flex-end; }
-@media (max-width: 1100px) {
-  .layout { grid-template-columns: 1fr; }
-  .lateral { position: static; }
-}
-</style>

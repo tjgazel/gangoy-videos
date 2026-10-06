@@ -2,6 +2,10 @@
 import { ref } from "vue";
 import { useRouter } from "vue-router";
 import { chamarApi } from "../api/cliente";
+import { Film, FolderOpen } from "@lucide/vue";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import NavegadorPastas from "../componentes/NavegadorPastas.vue";
 import { usarStatusSistema } from "../estado/usarStatusSistema";
 import { usarProjetoAtual } from "../estado/usarProjetoAtual";
@@ -32,68 +36,34 @@ async function usar(rota: "/api/workspace" | "/api/workspace/apontar") {
 
 void recarregar().catch(() => {});
 </script>
-
 <template>
-  <div class="boas-vindas">
-    <section class="cartao">
-      <div class="marca">
-        <span class="simbolo" aria-hidden="true"></span>
-        <span>Gangoy Vídeos</span>
-      </div>
-      <h1>Escolha onde guardar seus projetos</h1>
-      <p class="explicacao">
-        O sistema cria a pasta <strong>Gangoy-workspace</strong> no local escolhido. Nela ficam o banco, os roteiros,
-        as imagens e os vídeos de todos os projetos. Para fazer backup ou levar para outro computador, basta copiar essa pasta.
-      </p>
-      <p v-if="status?.existemDadosAntigos" class="destaque">
-        Os projetos que já existem em dados/ serão trazidos para a workspace.
-      </p>
+  <div class="grid min-h-svh place-items-center p-4">
+    <Card class="w-full max-w-2xl">
+      <CardHeader>
+        <div class="mb-2 flex items-center gap-2 font-semibold"><Film class="size-5" /> Gangoy Vídeos</div>
+        <CardTitle><h1 class="text-xl">Escolha onde guardar seus projetos</h1></CardTitle>
+        <CardDescription>
+          O sistema cria a pasta <strong>Gangoy-workspace</strong> no local escolhido. Nela ficam o banco, os roteiros,
+          as imagens e os vídeos de todos os projetos. Para fazer backup ou levar para outro computador, basta copiar essa pasta.
+        </CardDescription>
+      </CardHeader>
+      <CardContent class="grid gap-4">
+        <p v-if="status?.existemDadosAntigos" class="rounded-lg bg-muted p-3 text-sm">
+          Os projetos que já existem em dados/ serão trazidos para a workspace.
+        </p>
 
-      <NavegadorPastas v-model="pasta" />
+        <NavegadorPastas v-model="pasta" />
 
-      <p class="aviso-rede">Evite pastas de rede (compartilhamentos do Windows, NAS): o banco de dados pode corromper.</p>
-      <p v-if="erro" class="erro-texto">{{ erro }}</p>
+        <p class="text-sm text-muted-foreground">Evite pastas de rede (compartilhamentos do Windows, NAS): o banco de dados pode corromper.</p>
+        <Alert v-if="erro" variant="destructive"><AlertDescription>{{ erro }}</AlertDescription></Alert>
 
-      <div class="acoes">
-        <button type="button" class="botao" :disabled="!pasta || ocupado" @click="usar('/api/workspace/apontar')">
-          Abrir workspace existente
-        </button>
-        <button type="button" class="botao principal" :disabled="!pasta || ocupado" @click="usar('/api/workspace')">
-          Usar esta pasta
-        </button>
-      </div>
-    </section>
+        <div class="flex flex-wrap justify-end gap-2">
+          <Button type="button" variant="outline" :disabled="!pasta || ocupado" @click="usar('/api/workspace/apontar')">
+            <FolderOpen /> Abrir workspace existente
+          </Button>
+          <Button type="button" :disabled="!pasta || ocupado" @click="usar('/api/workspace')">Usar esta pasta</Button>
+        </div>
+      </CardContent>
+    </Card>
   </div>
 </template>
-
-<style scoped>
-.boas-vindas {
-  min-height: 100vh;
-  display: grid;
-  place-items: center;
-  padding: 32px 16px;
-}
-.cartao {
-  width: min(720px, 100%);
-  display: grid;
-  gap: 14px;
-  background: var(--cartao);
-  border: 1px solid var(--cartao-borda);
-  border-radius: 14px;
-  padding: 28px 30px;
-}
-.marca { display: flex; align-items: center; gap: 9px; font-weight: 650; color: var(--texto-suave); }
-.simbolo {
-  width: 18px;
-  height: 18px;
-  border-radius: 4px;
-  background:
-    linear-gradient(90deg, transparent 3px, #0b0d12 3px 4px, transparent 4px 14px, #0b0d12 14px 15px, transparent 15px),
-    linear-gradient(135deg, #3b82f6, #22d3ee);
-}
-h1 { font-size: 26px; }
-.explicacao { color: var(--texto-suave); margin: 0; max-width: 64ch; }
-.destaque { margin: 0; padding: 8px 12px; border-radius: 8px; background: var(--destaque-suave); }
-.aviso-rede { margin: 0; color: var(--alerta); font-size: 13px; }
-.acoes { display: flex; justify-content: flex-end; gap: 8px; }
-</style>

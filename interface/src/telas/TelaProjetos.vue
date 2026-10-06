@@ -2,6 +2,15 @@
 import { computed, onMounted, reactive, ref } from "vue";
 import { chamarApi } from "../api/cliente";
 import type { Projeto } from "../api/tipos";
+import { FolderKanban, Pencil, Plus, Trash2 } from "@lucide/vue";
+import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import CabecalhoTela from "../componentes/CabecalhoTela.vue";
 import PainelLateral from "../componentes/PainelLateral.vue";
 import SeletorModelo from "../componentes/SeletorModelo.vue";
 import { usarProjetoAtual } from "../estado/usarProjetoAtual";
@@ -101,104 +110,87 @@ onMounted(async () => {
     .catch(() => []);
 });
 </script>
-
 <template>
-  <section class="tela">
-    <header class="tela-cabecalho">
-      <h1>Projetos</h1>
-      <button type="button" class="botao principal" @click="abrirNovo">Novo projeto</button>
-    </header>
+  <section class="mx-auto grid max-w-6xl gap-6">
+    <CabecalhoTela titulo="Projetos">
+      <Button @click="abrirNovo"><Plus /> Novo projeto</Button>
+    </CabecalhoTela>
 
-    <p v-if="!projetos.length" class="vazio">Nenhum projeto ainda. Crie o primeiro para começar a planejar a história.</p>
+    <Empty v-if="!projetos.length" class="border">
+      <EmptyHeader>
+        <EmptyMedia variant="icon"><FolderKanban /></EmptyMedia>
+        <EmptyTitle>Nenhum projeto ainda.</EmptyTitle>
+        <EmptyDescription>Crie o primeiro para começar a planejar a história.</EmptyDescription>
+      </EmptyHeader>
+    </Empty>
 
-    <div class="grade">
-      <article v-for="projeto in projetos" :key="projeto.id" class="cartao-projeto">
-        <div class="topo">
-          <span class="inicial" data-testid="inicial" :style="{ background: cor(projeto.nome) }">{{ projeto.nome.charAt(0).toUpperCase() }}</span>
-          <div>
-            <h2>{{ projeto.nome }}</h2>
-            <p class="suave">{{ projeto.tematica || "Sem temática" }}</p>
+    <div class="grid grid-cols-[repeat(auto-fill,minmax(18rem,1fr))] gap-4">
+      <Card v-for="projeto in projetos" :key="projeto.id" role="article">
+        <CardHeader>
+          <div class="flex items-center gap-3">
+            <span
+              class="grid size-10 shrink-0 place-items-center rounded-lg font-bold text-white"
+              data-testid="inicial"
+              :style="{ background: cor(projeto.nome) }"
+            >{{ projeto.nome.charAt(0).toUpperCase() }}</span>
+            <div class="grid min-w-0">
+              <CardTitle><h2 class="truncate">{{ projeto.nome }}</h2></CardTitle>
+              <CardDescription>{{ projeto.tematica || "Sem temática" }}</CardDescription>
+            </div>
           </div>
-        </div>
-        <dl>
-          <div><dt>Duração</dt><dd class="numeros">{{ projeto.duracaoPadraoMinutos }} min</dd></div>
-          <div><dt>Canal</dt><dd>{{ projeto.idCanal || "Não definido" }}</dd></div>
-          <div><dt>Modelo</dt><dd>{{ projeto.modeloOllama || "Padrão do sistema" }}</dd></div>
-        </dl>
-        <p v-if="projeto.modeloOllama && !instalado(projeto.modeloOllama)" class="etiqueta alerta">
-          Modelo não instalado: {{ projeto.modeloOllama }}
-        </p>
-        <div class="acoes">
-          <button type="button" class="botao" @click="abrirEdicao(projeto)">Editar</button>
-          <button type="button" class="botao perigo" @click="excluir(projeto)">Excluir</button>
-        </div>
-      </article>
+        </CardHeader>
+        <CardContent class="grid gap-3">
+          <dl class="grid gap-1 text-sm">
+            <div class="flex justify-between gap-3"><dt class="text-muted-foreground">Duração</dt><dd class="tabular-nums">{{ projeto.duracaoPadraoMinutos }} min</dd></div>
+            <div class="flex justify-between gap-3"><dt class="text-muted-foreground">Canal</dt><dd class="break-all text-right">{{ projeto.idCanal || "Não definido" }}</dd></div>
+            <div class="flex justify-between gap-3"><dt class="text-muted-foreground">Modelo</dt><dd class="break-all text-right">{{ projeto.modeloOllama || "Padrão do sistema" }}</dd></div>
+          </dl>
+          <Badge v-if="projeto.modeloOllama && !instalado(projeto.modeloOllama)" variant="destructive" class="justify-self-start">
+            Modelo não instalado: {{ projeto.modeloOllama }}
+          </Badge>
+        </CardContent>
+        <CardFooter class="gap-2 border-t">
+          <Button variant="outline" size="sm" @click="abrirEdicao(projeto)"><Pencil /> Editar</Button>
+          <Button variant="destructive" size="sm" @click="excluir(projeto)"><Trash2 /> Excluir</Button>
+        </CardFooter>
+      </Card>
     </div>
 
     <PainelLateral :aberto="painelAberto" :titulo="editandoId ? 'Editar projeto' : 'Novo projeto'" @fechar="painelAberto = false">
-      <form class="formulario" novalidate @submit.prevent="salvar">
-        <label class="campo"><span>Nome do projeto</span><input v-model="formulario.nome" required /></label>
-        <label class="campo"><span>Temática</span><input v-model="formulario.tematica" placeholder="Ex.: Fábulas de aventura" /></label>
-        <label class="campo">
-          <span>ID do canal no YouTube</span>
-          <input v-model="formulario.idCanal" list="canais-conectados" placeholder="UC..." />
+      <form class="grid gap-4" novalidate @submit.prevent="salvar">
+        <div class="grid gap-2">
+          <Label for="projeto-nome">Nome do projeto</Label>
+          <Input id="projeto-nome" v-model="formulario.nome" required />
+        </div>
+        <div class="grid gap-2">
+          <Label for="projeto-tematica">Temática</Label>
+          <Input id="projeto-tematica" v-model="formulario.tematica" placeholder="Ex.: Fábulas de aventura" />
+        </div>
+        <div class="grid gap-2">
+          <Label for="projeto-canal">ID do canal no YouTube</Label>
+          <Input id="projeto-canal" v-model="formulario.idCanal" list="canais-conectados" placeholder="UC..." />
           <datalist id="canais-conectados">
             <option v-for="canal in canais" :key="canal.idCanal" :value="canal.idCanal">{{ canal.tituloCanal }}</option>
           </datalist>
-        </label>
-        <label class="campo"><span>ID da playlist padrão</span><input v-model="formulario.idPlaylist" placeholder="PL..." /></label>
-        <label class="campo">
-          <span>Frequência de produção</span>
-          <input v-model="formulario.frequencia" />
-          <small>Use diaria ou semanal:ter:18:00 (dia de seg a dom, hora HH:MM).</small>
-        </label>
-        <label class="campo">
-          <span>Duração padrão (minutos)</span>
-          <input v-model.number="formulario.duracaoPadraoMinutos" type="number" />
-          <small>De 5 a 10 minutos por vídeo.</small>
-        </label>
+        </div>
+        <div class="grid gap-2">
+          <Label for="projeto-playlist">ID da playlist padrão</Label>
+          <Input id="projeto-playlist" v-model="formulario.idPlaylist" placeholder="PL..." />
+        </div>
+        <div class="grid gap-2">
+          <Label for="projeto-frequencia">Frequência de produção</Label>
+          <Input id="projeto-frequencia" v-model="formulario.frequencia" />
+          <p class="text-xs text-muted-foreground">Use diaria ou semanal:ter:18:00 (dia de seg a dom, hora HH:MM).</p>
+        </div>
+        <div class="grid gap-2">
+          <Label for="projeto-duracao">Duração padrão (minutos)</Label>
+          <Input id="projeto-duracao" v-model="formulario.duracaoPadraoMinutos" type="number" />
+          <p class="text-xs text-muted-foreground">De 5 a 10 minutos por vídeo.</p>
+        </div>
         <SeletorModelo v-model="formulario.modeloOllama" :permitir-padrao="true" :rotulo-padrao="rotuloPadrao" />
-        <p v-if="erro" class="erro-texto" role="alert">{{ erro }}</p>
-        <button type="submit" class="botao principal">{{ editandoId ? "Salvar alterações" : "Criar projeto" }}</button>
+        <Alert v-if="erro" variant="destructive"><AlertDescription>{{ erro }}</AlertDescription></Alert>
+        <Button type="submit" class="justify-self-start">{{ editandoId ? "Salvar alterações" : "Criar projeto" }}</Button>
       </form>
     </PainelLateral>
   </section>
 </template>
-
-<style scoped>
-.grade {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 14px;
-}
-.cartao-projeto {
-  display: grid;
-  gap: 12px;
-  align-content: start;
-  background: var(--cartao);
-  border: 1px solid var(--cartao-borda);
-  border-radius: 10px;
-  padding: 16px;
-}
-.topo { display: flex; gap: 12px; align-items: center; }
-.inicial {
-  width: 38px;
-  height: 38px;
-  border-radius: 9px;
-  display: grid;
-  place-items: center;
-  color: #fff;
-  font-weight: 700;
-  font-size: 17px;
-  flex-shrink: 0;
-}
-.suave { margin: 0; color: var(--texto-suave); font-size: 13px; }
-dl { margin: 0; display: grid; gap: 4px; font-size: 13px; }
-dl div { display: flex; justify-content: space-between; gap: 12px; }
-dt { color: var(--texto-suave); }
-dd { margin: 0; text-align: right; overflow-wrap: anywhere; }
-.acoes { display: flex; gap: 8px; }
-.formulario { display: grid; gap: 14px; }
-.formulario small { color: var(--texto-suave); }
-.formulario .botao.principal { justify-self: start; }
-</style>

@@ -1,4 +1,4 @@
-import { expect, type APIRequestContext } from "@playwright/test";
+import { expect, type APIRequestContext, type Locator, type Page } from "@playwright/test";
 
 // Espera uma tarefa terminar consultando a API (os testes de interface não assinam o SSE).
 export async function esperarTarefa(request: APIRequestContext, tarefaId: number) {
@@ -23,4 +23,20 @@ export async function projetoComRoteiro(request: APIRequestContext): Promise<num
   const roteiro = await (await request.post(`/api/projetos/${projeto.id}/capitulos/1/roteiro`)).json();
   expect((await esperarTarefa(request, roteiro.tarefaId)).status).toBe("concluida");
   return projeto.id;
+}
+
+// Os seletores do shadcn-vue não são <select> nativos: abre o combobox pelo nome e clica na opção.
+export async function escolherOpcao(page: Page, rotulo: string | RegExp, opcao: string | RegExp): Promise<void> {
+  await page.getByRole("combobox", { name: rotulo }).click();
+  await page.getByRole("option", { name: opcao }).click();
+}
+
+// O texto do valor escolhido, para asserções como toHaveText.
+export function valorDoSeletor(page: Page, rotulo: string | RegExp): Locator {
+  return page.getByRole("combobox", { name: rotulo });
+}
+
+// Região de avisos (toasts) do vue-sonner, rotulada em Aviso.vue.
+export function avisos(page: Page): Locator {
+  return page.getByRole("region", { name: /^Avisos/ });
 }

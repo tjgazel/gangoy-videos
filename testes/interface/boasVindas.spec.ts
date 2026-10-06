@@ -20,7 +20,7 @@ test("sem workspace: escolhe a pasta, cria 'Meus Vídeos' e começa a usar", asy
   await expect(page).toHaveURL(/\/producao$/);
   const status = await (await request.get("/api/sistema/status")).json();
   expect(status.workspace.caminho).toBe(join(local, "Meus Vídeos", "Gangoy-workspace"));
-  await expect(page.getByTitle("Workspace disponível")).toBeVisible();
+  await expect(page.getByLabel("Workspace disponível")).toBeVisible();
 });
 
 test("caminho inexistente mostra o erro do servidor", async ({ page, request }) => {

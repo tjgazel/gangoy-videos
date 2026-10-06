@@ -3,6 +3,14 @@ import { computed, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import { chamarApi } from "../api/cliente";
 import type { Personagem, Planejamento, Tarefa } from "../api/tipos";
+import { ArrowLeft, Sparkles } from "@lucide/vue";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import Campo from "../componentes/Campo.vue";
+import CabecalhoTela from "../componentes/CabecalhoTela.vue";
 import EditorLista from "../componentes/EditorLista.vue";
 import BarraProgresso from "../componentes/BarraProgresso.vue";
 import { usarProjetoAtual } from "../estado/usarProjetoAtual";
@@ -71,73 +79,68 @@ onMounted(() => {
   if (ultima && ultima.status !== "falhou") void acompanhar(ultima.id);
 });
 </script>
-
 <template>
-  <section class="tela">
-    <header class="tela-cabecalho">
-      <h1>Planejamento</h1>
-      <RouterLink to="/producao" class="botao">Voltar ao quadro</RouterLink>
-    </header>
+  <section class="mx-auto grid max-w-3xl gap-6">
+    <CabecalhoTela titulo="Planejamento">
+      <Button as-child variant="outline"><RouterLink to="/producao"><ArrowLeft /> Voltar ao quadro</RouterLink></Button>
+    </CabecalhoTela>
 
-    <p v-if="!projetoAtual" class="vazio">Escolha um projeto no topo da tela.</p>
+    <p v-if="!projetoAtual" class="text-muted-foreground">Escolha um projeto no topo da tela.</p>
 
     <template v-else>
-      <form class="painel bloco" @submit.prevent="propor">
-        <label class="campo">
-          <span>Enredo</span>
-          <textarea v-model="enredo" rows="5" placeholder="Conte a história em um ou dois parágrafos: quem, onde, o problema e como termina."></textarea>
-        </label>
-        <div v-if="gerando && tarefa" class="progresso">
-          <span>{{ tarefa.mensagem || "Na fila" }}</span>
-          <BarraProgresso :valor="tarefa.progresso" rotulo="Planejamento" />
-        </div>
-        <button type="submit" class="botao principal" :disabled="gerando">Propor planejamento</button>
-      </form>
-
-      <p v-if="erro" class="erro-texto" role="alert">{{ erro }}</p>
-
-      <form v-if="proposta" class="painel bloco" @submit.prevent="confirmarPlanejamento">
-        <h2>Revise antes de gravar</h2>
-        <label class="campo"><span>Sinopse</span><textarea v-model="proposta.sinopse" rows="3"></textarea></label>
-        <label class="campo"><span>Mundo</span><textarea v-model="proposta.mundo" rows="2"></textarea></label>
-
-        <h3>Personagens</h3>
-        <EditorLista v-model="proposta.personagens" rotulo-item="Personagem" :novo="novoPersonagem">
-          <template #item="{ item }">
-            <div class="duas-colunas">
-              <label class="campo"><span>Nome</span><input v-model="item.nome" /></label>
-              <label class="campo"><span>Papel</span><input v-model="item.papel" /></label>
+      <Card>
+        <CardContent>
+          <form class="grid gap-4" @submit.prevent="propor">
+            <Campo rotulo="Enredo">
+              <Textarea v-model="enredo" rows="5" placeholder="Conte a história em um ou dois parágrafos: quem, onde, o problema e como termina." />
+            </Campo>
+            <div v-if="gerando && tarefa" class="grid gap-2 text-sm text-muted-foreground">
+              <span>{{ tarefa.mensagem || "Na fila" }}</span>
+              <BarraProgresso :valor="tarefa.progresso" rotulo="Planejamento" />
             </div>
-            <label class="campo">
-              <span>Aparência fixa</span>
-              <textarea v-model="item.aparenciaFixa" rows="2"></textarea>
-              <small>Vai em todo pedido de imagem, para o personagem não mudar de cara.</small>
-            </label>
-            <label class="campo">
-              <span>Traços (separados por vírgula)</span>
-              <input :value="tracosComoTexto(item)" @change="definirTracos(item, ($event.target as HTMLInputElement).value)" />
-            </label>
-          </template>
-        </EditorLista>
+            <Button type="submit" class="justify-self-start" :disabled="gerando"><Sparkles /> Propor planejamento</Button>
+          </form>
+        </CardContent>
+      </Card>
 
-        <h3>Capítulos</h3>
-        <EditorLista v-model="proposta.esbocos" rotulo-item="Capítulo" :novo="novoCapitulo">
-          <template #item="{ item }">
-            <label class="campo"><span>Título</span><input v-model="item.titulo" /></label>
-            <label class="campo"><span>Resumo</span><textarea v-model="item.resumo" rows="2"></textarea></label>
-          </template>
-        </EditorLista>
+      <Alert v-if="erro" variant="destructive"><AlertDescription>{{ erro }}</AlertDescription></Alert>
 
-        <button type="submit" class="botao principal">Confirmar planejamento</button>
-      </form>
+      <Card v-if="proposta">
+        <CardHeader><CardTitle><h2>Revise antes de gravar</h2></CardTitle></CardHeader>
+        <CardContent>
+          <form class="grid gap-5" @submit.prevent="confirmarPlanejamento">
+            <Campo rotulo="Sinopse"><Textarea v-model="proposta.sinopse" rows="3" /></Campo>
+            <Campo rotulo="Mundo"><Textarea v-model="proposta.mundo" rows="2" /></Campo>
+
+            <h3 class="font-semibold">Personagens</h3>
+            <EditorLista v-model="proposta.personagens" rotulo-item="Personagem" :novo="novoPersonagem">
+              <template #item="{ item }">
+                <div class="grid gap-3 sm:grid-cols-2">
+                  <Campo rotulo="Nome"><Input v-model="item.nome" /></Campo>
+                  <Campo rotulo="Papel"><Input v-model="item.papel" /></Campo>
+                </div>
+                <Campo rotulo="Aparência fixa">
+                  <Textarea v-model="item.aparenciaFixa" rows="2" />
+                  <template #dica>Vai em todo pedido de imagem, para o personagem não mudar de cara.</template>
+                </Campo>
+                <Campo rotulo="Traços (separados por vírgula)">
+                  <Input :model-value="tracosComoTexto(item)" @change="definirTracos(item, ($event.target as HTMLInputElement).value)" />
+                </Campo>
+              </template>
+            </EditorLista>
+
+            <h3 class="font-semibold">Capítulos</h3>
+            <EditorLista v-model="proposta.esbocos" rotulo-item="Capítulo" :novo="novoCapitulo">
+              <template #item="{ item }">
+                <Campo rotulo="Título"><Input v-model="item.titulo" /></Campo>
+                <Campo rotulo="Resumo"><Textarea v-model="item.resumo" rows="2" /></Campo>
+              </template>
+            </EditorLista>
+
+            <Button type="submit" class="justify-self-start">Confirmar planejamento</Button>
+          </form>
+        </CardContent>
+      </Card>
     </template>
   </section>
 </template>
-
-<style scoped>
-.bloco { display: grid; gap: 14px; max-width: 860px; }
-.bloco > .botao.principal { justify-self: start; }
-.progresso { display: grid; gap: 6px; color: var(--texto-suave); }
-.duas-colunas { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-small { color: var(--texto-suave); }
-</style>

@@ -1,4 +1,5 @@
 import { test, expect, type APIRequestContext } from "@playwright/test";
+import { avisos } from "./apoio.js";
 
 const ENREDO = "Léo encontra um ovo de dragão e salva a vila da seca.";
 
@@ -34,14 +35,14 @@ test("aviso 'Tarefa concluída' ao terminar", async ({ page, request }) => {
   await page.goto("/producao");
   await expect(page.getByRole("button", { name: /Fila: 0 executando · 0 aguardando/ })).toBeVisible();
   await enfileirarPlanejamento(request);
-  await expect(page.getByRole("status").filter({ hasText: "Tarefa concluída" })).toBeVisible({ timeout: 10000 });
+  await expect(avisos(page).getByText("Tarefa concluída")).toBeVisible({ timeout: 10000 });
   await expect(page.getByRole("button", { name: /Fila: 0 executando/ })).toBeVisible();
 });
 
 test("status do Ollama aparece com título 'Ollama online'", async ({ page }) => {
   await page.goto("/producao");
-  await expect(page.getByTitle("Ollama online")).toBeVisible();
-  await expect(page.getByTitle("Workspace disponível")).toBeVisible();
+  await expect(page.getByLabel("Ollama online")).toBeVisible();
+  await expect(page.getByLabel("Workspace disponível")).toBeVisible();
 });
 
 test("sem workspace, qualquer tela leva às boas-vindas", async ({ page, request }) => {
