@@ -2,6 +2,14 @@
 import { computed, onMounted, reactive, ref } from "vue";
 import { chamarApi } from "../api/cliente";
 import type { ConfiguracoesSistema } from "../api/tipos";
+import { Cpu, FolderInput, FolderOpen, Trash2, TriangleAlert, Unplug, MonitorPlay } from "@lucide/vue";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import CabecalhoTela from "../componentes/CabecalhoTela.vue";
+import Campo from "../componentes/Campo.vue";
 import SeletorModelo from "../componentes/SeletorModelo.vue";
 import NavegadorPastas from "../componentes/NavegadorPastas.vue";
 import PainelLateral from "../componentes/PainelLateral.vue";
@@ -143,131 +151,138 @@ onMounted(async () => {
   await Promise.all([carregarDadosAntigos().catch(() => {}), carregarYoutube().catch(() => {})]);
 });
 </script>
-
 <template>
-  <section class="tela">
-    <header class="tela-cabecalho"><h1>Configurações</h1></header>
+  <section class="mx-auto grid max-w-3xl gap-6">
+    <CabecalhoTela titulo="Configurações" />
 
-    <section class="painel secao">
-      <h2>Workspace</h2>
-      <dl class="dados">
-        <div><dt>Local</dt><dd>{{ status?.workspace.caminho ?? "Não configurada" }}</dd></div>
-        <div v-if="status?.workspace.espacoLivreBytes !== null && status?.workspace.espacoLivreBytes !== undefined">
-          <dt>Espaço livre</dt><dd class="numeros">{{ formatarBytes(status.workspace.espacoLivreBytes) }}</dd>
+    <Card>
+      <CardHeader>
+        <CardTitle><h2 class="flex items-center gap-2"><FolderOpen class="size-4" /> Workspace</h2></CardTitle>
+      </CardHeader>
+      <CardContent class="grid gap-4">
+        <dl class="grid gap-1.5 text-sm">
+          <div class="grid gap-3 sm:grid-cols-[9rem_1fr]"><dt class="text-muted-foreground">Local</dt><dd class="break-all">{{ status?.workspace.caminho ?? "Não configurada" }}</dd></div>
+          <div v-if="status?.workspace.espacoLivreBytes !== null && status?.workspace.espacoLivreBytes !== undefined" class="grid gap-3 sm:grid-cols-[9rem_1fr]">
+            <dt class="text-muted-foreground">Espaço livre</dt><dd class="tabular-nums">{{ formatarBytes(status.workspace.espacoLivreBytes) }}</dd>
+          </div>
+        </dl>
+        <div v-if="movendo && (movendo.status === 'na_fila' || movendo.status === 'executando')" class="grid gap-2 text-sm text-muted-foreground">
+          <span>{{ movendo.mensagem || "Mudança na fila" }}</span>
+          <BarraProgresso :valor="movendo.progresso" rotulo="Mudança da workspace" />
         </div>
-      </dl>
-      <div v-if="movendo && (movendo.status === 'na_fila' || movendo.status === 'executando')" class="progresso">
-        <span>{{ movendo.mensagem || "Mudança na fila" }}</span>
-        <BarraProgresso :valor="movendo.progresso" rotulo="Mudança da workspace" />
-      </div>
-      <div class="acoes">
-        <button type="button" class="botao" @click="painelMover = true">Mudar local</button>
-        <RouterLink to="/boas-vindas" class="botao">Apontar outro local</RouterLink>
-        <button v-if="dadosAntigos.length" type="button" class="botao perigo" @click="apagarDadosAntigos">
-          Apagar dados antigos já convertidos
-        </button>
-      </div>
-    </section>
+        <div class="flex flex-wrap gap-2">
+          <Button variant="outline" @click="painelMover = true"><FolderInput /> Mudar local</Button>
+          <Button as-child variant="outline"><RouterLink to="/boas-vindas">Apontar outro local</RouterLink></Button>
+          <Button v-if="dadosAntigos.length" variant="destructive" @click="apagarDadosAntigos">
+            <Trash2 /> Apagar dados antigos já convertidos
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
 
-    <section class="painel secao">
-      <h2>Modelos</h2>
-      <p class="ajuda">Escolha entre os modelos já instalados no Ollama. Para instalar outros, use o próprio Ollama.</p>
-      <form class="formulario" novalidate @submit.prevent="salvarModelos">
-        <SeletorModelo v-model="formularioModelos.modeloPrincipal" :permitir-padrao="false" rotulo="Modelo principal" />
-        <SeletorModelo v-model="formularioModelos.modeloLeve" :permitir-padrao="false" rotulo="Modelo leve" />
-        <label class="campo">
-          <span>Contexto de trabalho (tokens)</span>
-          <input v-model.number="formularioModelos.contextoTrabalho" type="number" step="1024" />
-          <small v-if="principalEscolhido?.contextoMaximo">
-            O modelo principal aceita até {{ formatarNumero(principalEscolhido.contextoMaximo) }} tokens. Contexto maior usa mais memória da placa de vídeo.
-          </small>
-        </label>
-        <p v-if="principalEscolhido?.percentualCpu" class="etiqueta alerta">
-          {{ principalEscolhido.nome }}: {{ principalEscolhido.percentualCpu }}% na CPU (mais lento). Reduza o contexto ou use um modelo menor.
-        </p>
-        <p v-if="erroModelos" class="erro-texto" role="alert">{{ erroModelos }}</p>
-        <button type="submit" class="botao principal">Salvar modelos</button>
-      </form>
-    </section>
+    <Card>
+      <CardHeader>
+        <CardTitle><h2 class="flex items-center gap-2"><Cpu class="size-4" /> Modelos</h2></CardTitle>
+        <CardDescription>Escolha entre os modelos já instalados no Ollama. Para instalar outros, use o próprio Ollama.</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <form class="grid gap-4" novalidate @submit.prevent="salvarModelos">
+          <SeletorModelo v-model="formularioModelos.modeloPrincipal" :permitir-padrao="false" rotulo="Modelo principal" />
+          <SeletorModelo v-model="formularioModelos.modeloLeve" :permitir-padrao="false" rotulo="Modelo leve" />
+          <Campo rotulo="Contexto de trabalho (tokens)">
+            <Input :model-value="formularioModelos.contextoTrabalho" type="number" step="1024" @update:model-value="formularioModelos.contextoTrabalho = Number($event)" />
+            <template v-if="principalEscolhido?.contextoMaximo" #dica>
+              O modelo principal aceita até {{ formatarNumero(principalEscolhido.contextoMaximo) }} tokens. Contexto maior usa mais memória da placa de vídeo.
+            </template>
+          </Campo>
+          <Alert v-if="principalEscolhido?.percentualCpu">
+            <TriangleAlert />
+            <AlertDescription>
+              {{ principalEscolhido.nome }}: {{ principalEscolhido.percentualCpu }}% na CPU (mais lento). Reduza o contexto ou use um modelo menor.
+            </AlertDescription>
+          </Alert>
+          <Alert v-if="erroModelos" variant="destructive"><AlertDescription>{{ erroModelos }}</AlertDescription></Alert>
+          <Button type="submit" class="justify-self-start">Salvar modelos</Button>
+        </form>
+      </CardContent>
+    </Card>
 
-    <section class="painel secao">
-      <h2>YouTube</h2>
-      <p class="ajuda">
-        Crie uma credencial OAuth do tipo "App para computador" no Google Cloud, com a YouTube Data API v3 ativada,
-        e adicione sua conta como usuário de teste. Enquanto o app do Google Cloud não for verificado, os vídeos só podem ser enviados como privados.
-      </p>
-      <form class="formulario" novalidate @submit.prevent="salvarCredenciais">
-        <label class="campo"><span>Client ID</span><input v-model="credenciais.clientId" /></label>
-        <label class="campo">
-          <span>Client Secret</span>
-          <input v-model="credenciais.clientSecret" type="password" autocomplete="off" placeholder="Deixe vazio para manter o atual" />
-          <small v-if="segredoSalvo">Client Secret salvo neste computador.</small>
-        </label>
-        <p v-if="erroCredenciais" class="erro-texto" role="alert">{{ erroCredenciais }}</p>
-        <button type="submit" class="botao principal">Salvar credenciais</button>
-      </form>
-      <h3>Canais conectados</h3>
-      <ul class="canais">
-        <li v-for="canal in canais" :key="canal.idCanal">
-          <span>{{ canal.tituloCanal || "(sem título)" }}</span>
-          <small>{{ canal.idCanal }}</small>
-          <button type="button" class="botao perigo" @click="desconectar(canal)">Desconectar</button>
-        </li>
-        <li v-if="!canais.length" class="vazio">Nenhum canal conectado.</li>
-      </ul>
-      <button type="button" class="botao" @click="conectar">Conectar conta do YouTube</button>
-    </section>
+    <Card>
+      <CardHeader>
+        <CardTitle><h2 class="flex items-center gap-2"><MonitorPlay class="size-4" /> YouTube</h2></CardTitle>
+        <CardDescription>
+          Crie uma credencial OAuth do tipo "App para computador" no Google Cloud, com a YouTube Data API v3 ativada,
+          e adicione sua conta como usuário de teste. Enquanto o app do Google Cloud não for verificado, os vídeos só podem ser enviados como privados.
+        </CardDescription>
+      </CardHeader>
+      <CardContent class="grid gap-5">
+        <form class="grid gap-4" novalidate @submit.prevent="salvarCredenciais">
+          <Campo rotulo="Client ID"><Input v-model="credenciais.clientId" /></Campo>
+          <Campo rotulo="Client Secret">
+            <Input v-model="credenciais.clientSecret" type="password" autocomplete="off" placeholder="Deixe vazio para manter o atual" />
+            <template v-if="segredoSalvo" #dica>Client Secret salvo neste computador.</template>
+          </Campo>
+          <Alert v-if="erroCredenciais" variant="destructive"><AlertDescription>{{ erroCredenciais }}</AlertDescription></Alert>
+          <Button type="submit" class="justify-self-start">Salvar credenciais</Button>
+        </form>
 
-    <section class="painel secao">
-      <h2>Ollama</h2>
-      <dl class="dados">
-        <div><dt>Endereço</dt><dd>{{ status?.ollama.url }}</dd></div>
-        <div><dt>Situação</dt><dd>{{ status?.ollama.online ? `Online, versão ${status.ollama.versao}` : "Fora do ar" }}</dd></div>
-      </dl>
-      <table v-if="modelos.length" class="tabela">
-        <thead>
-          <tr><th>Modelo</th><th>Tamanho</th><th>Parâmetros</th><th>Quantização</th><th>Contexto máximo</th></tr>
-        </thead>
-        <tbody>
-          <tr v-for="modelo in modelos" :key="modelo.nome">
-            <td>{{ modelo.nome }}</td>
-            <td class="numeros">{{ formatarBytes(modelo.tamanhoBytes) }}</td>
-            <td>{{ modelo.parametros }}</td>
-            <td>{{ modelo.quantizacao }}</td>
-            <td class="numeros">{{ modelo.contextoMaximo ? formatarNumero(modelo.contextoMaximo) : "?" }}</td>
-          </tr>
-        </tbody>
-      </table>
-    </section>
+        <div class="grid gap-3">
+          <h3 class="font-semibold">Canais conectados</h3>
+          <Table>
+            <TableBody>
+              <TableRow v-for="canal in canais" :key="canal.idCanal">
+                <TableCell class="font-medium">{{ canal.tituloCanal || "(sem título)" }}</TableCell>
+                <TableCell class="text-muted-foreground">{{ canal.idCanal }}</TableCell>
+                <TableCell class="text-right">
+                  <Button variant="destructive" size="sm" @click="desconectar(canal)"><Unplug /> Desconectar</Button>
+                </TableCell>
+              </TableRow>
+              <TableRow v-if="!canais.length">
+                <TableCell colspan="3" class="text-muted-foreground">Nenhum canal conectado.</TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
+          <Button variant="outline" class="justify-self-start" @click="conectar"><MonitorPlay /> Conectar conta do YouTube</Button>
+        </div>
+      </CardContent>
+    </Card>
+
+    <Card>
+      <CardHeader>
+        <CardTitle><h2 class="flex items-center gap-2"><Cpu class="size-4" /> Ollama</h2></CardTitle>
+      </CardHeader>
+      <CardContent class="grid gap-4">
+        <dl class="grid gap-1.5 text-sm">
+          <div class="grid gap-3 sm:grid-cols-[9rem_1fr]"><dt class="text-muted-foreground">Endereço</dt><dd>{{ status?.ollama.url }}</dd></div>
+          <div class="grid gap-3 sm:grid-cols-[9rem_1fr]"><dt class="text-muted-foreground">Situação</dt><dd>{{ status?.ollama.online ? `Online, versão ${status.ollama.versao}` : "Fora do ar" }}</dd></div>
+        </dl>
+        <Table v-if="modelos.length">
+          <TableHeader>
+            <TableRow>
+              <TableHead>Modelo</TableHead><TableHead>Tamanho</TableHead><TableHead>Parâmetros</TableHead><TableHead>Quantização</TableHead><TableHead>Contexto máximo</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            <TableRow v-for="modelo in modelos" :key="modelo.nome">
+              <TableCell class="font-medium">{{ modelo.nome }}</TableCell>
+              <TableCell class="tabular-nums">{{ formatarBytes(modelo.tamanhoBytes) }}</TableCell>
+              <TableCell>{{ modelo.parametros }}</TableCell>
+              <TableCell>{{ modelo.quantizacao }}</TableCell>
+              <TableCell class="tabular-nums">{{ modelo.contextoMaximo ? formatarNumero(modelo.contextoMaximo) : "?" }}</TableCell>
+            </TableRow>
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
 
     <PainelLateral :aberto="painelMover" titulo="Mudar a workspace de lugar" @fechar="painelMover = false">
-      <div class="formulario">
-        <p class="ajuda">
+      <div class="grid gap-4">
+        <p class="text-sm text-muted-foreground">
           A pasta Gangoy-workspace inteira vai para o local escolhido. Em outro disco, o sistema copia, confere cada arquivo e só então apaga a origem.
         </p>
         <NavegadorPastas v-model="destino" />
-        <button type="button" class="botao principal" :disabled="!destino" @click="mover">Mover para cá</button>
+        <Button :disabled="!destino" class="justify-self-start" @click="mover">Mover para cá</Button>
       </div>
     </PainelLateral>
   </section>
 </template>
-
-<style scoped>
-.secao { display: grid; gap: 14px; max-width: 860px; }
-.ajuda { margin: 0; color: var(--texto-suave); max-width: 72ch; }
-.dados { margin: 0; display: grid; gap: 6px; }
-.dados div { display: grid; grid-template-columns: 140px 1fr; gap: 12px; }
-.dados dt { color: var(--texto-suave); }
-.dados dd { margin: 0; overflow-wrap: anywhere; }
-.acoes { display: flex; flex-wrap: wrap; gap: 8px; }
-.progresso { display: grid; gap: 6px; }
-.formulario { display: grid; gap: 14px; max-width: 520px; }
-.formulario small { color: var(--texto-suave); }
-.formulario .botao.principal { justify-self: start; }
-.canais { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
-.canais li { display: flex; gap: 10px; align-items: center; }
-.canais small { color: var(--texto-suave); margin-right: auto; }
-.tabela { width: 100%; border-collapse: collapse; font-size: 13px; }
-.tabela th { text-align: left; color: var(--texto-suave); font-weight: 500; }
-.tabela th, .tabela td { padding: 6px 8px; border-bottom: 1px solid var(--cartao-borda); }
-</style>
