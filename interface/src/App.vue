@@ -5,6 +5,7 @@ import MenuLateral from "./componentes/MenuLateral.vue";
 import BarraTopo from "./componentes/BarraTopo.vue";
 import Aviso from "./componentes/Aviso.vue";
 import DialogoConfirmacao from "./componentes/DialogoConfirmacao.vue";
+import ModoTema from "./componentes/ModoTema.vue";
 import { usarStatusSistema } from "./estado/usarStatusSistema";
 import { usarProjetoAtual } from "./estado/usarProjetoAtual";
 import { usarTarefas } from "./estado/usarTarefas";
@@ -46,6 +47,8 @@ watch(() => status.value?.workspace.disponivel, carregarDados);
       </main>
     </div>
   </div>
+  <!-- Provisório: a Tarefa 3 move a troca de tema para a barra lateral. -->
+  <ModoTema class="fixed bottom-3 left-3 z-50" />
   <Aviso />
   <DialogoConfirmacao />
 </template>

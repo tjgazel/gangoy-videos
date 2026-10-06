@@ -6,11 +6,36 @@ test.beforeEach(async ({ request }) => {
 
 test("tema escuro por padrão; troca para claro e continua após recarregar", async ({ page }) => {
   await page.goto("/producao");
-  await expect(page.locator("html")).toHaveAttribute("data-tema", "escuro");
-  await page.getByRole("button", { name: "☀ Claro" }).click();
-  await expect(page.locator("html")).toHaveAttribute("data-tema", "claro");
+  await expect(page.locator("html")).toHaveClass(/dark/);
+  await page.getByRole("button", { name: "Tema" }).click();
+  await page.getByRole("menuitem", { name: "Claro" }).click();
+  await expect(page.locator("html")).not.toHaveClass(/dark/);
   await page.reload();
-  await expect(page.locator("html")).toHaveAttribute("data-tema", "claro");
+  await expect(page.locator("html")).not.toHaveClass(/dark/);
+});
+
+test("tema Sistema segue o esquema de cores do navegador", async ({ page }) => {
+  await page.emulateMedia({ colorScheme: "light" });
+  await page.goto("/producao");
+  await page.getByRole("button", { name: "Tema" }).click();
+  await page.getByRole("menuitem", { name: "Sistema" }).click();
+  await expect(page.locator("html")).not.toHaveClass(/dark/);
+  await page.emulateMedia({ colorScheme: "dark" });
+  await expect(page.locator("html")).toHaveClass(/dark/);
+});
+
+test("preferência antiga 'claro' é respeitada", async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem("gangoy.tema", "claro"));
+  await page.goto("/producao");
+  await expect(page.locator("html")).not.toHaveClass(/dark/);
+  expect(await page.evaluate(() => localStorage.getItem("gangoy.tema"))).toBe("light");
+});
+
+test("preferência antiga 'escuro' é respeitada", async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem("gangoy.tema", "escuro"));
+  await page.goto("/producao");
+  await expect(page.locator("html")).toHaveClass(/dark/);
+  expect(await page.evaluate(() => localStorage.getItem("gangoy.tema"))).toBe("dark");
 });
 
 test("menu lateral tem Produção, Revisão, Dossiê, Projetos e Configurações", async ({ page }) => {

@@ -1,7 +1,7 @@
 import { ref, watch } from "vue";
 
 export type Tema = "escuro" | "claro";
-const CHAVE = "gangoy.tema";
+const CHAVE = "gangoy.tema.antigo"; // provisório: a chave "gangoy.tema" agora é do usarModoTema
 
 // Um só estado para o app inteiro; a escolha fica salva no navegador.
 const tema = ref<Tema>(localStorage.getItem(CHAVE) === "claro" ? "claro" : "escuro");
