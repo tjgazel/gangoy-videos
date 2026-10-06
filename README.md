@@ -11,7 +11,7 @@ Tudo fica na sua máquina: o servidor só aceita conexões do próprio computado
 
 ## Requisitos
 
-- Node.js 22.12 ou mais novo
+- Node.js 22.13 ou mais novo (o banco usa o `node:sqlite`, que só funciona sem opção extra a partir dessa versão)
 - [Ollama](https://ollama.com) instalado e em execução, com pelo menos um modelo (padrão: `gemma4:12b-it-qat` e `gemma4:e4b-it-qat`)
 - Placa de vídeo com memória suficiente para o modelo escolhido (desenvolvido numa RTX 4070 Ti de 12 GB). Sem GPU funciona, mas fica bem mais lento.
 - Google Chrome, só para os testes de interface
