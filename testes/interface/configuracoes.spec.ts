@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { avisos } from "./apoio.js";
+import { avisos, escolherOpcao, valorDoSeletor } from "./apoio.js";
 
 test("seções visíveis; modelos e contexto salvos; erro do servidor; credenciais", async ({ page, request }) => {
   await request.post("/__teste/reiniciar", { data: { comWorkspace: true } });
@@ -9,12 +9,12 @@ test("seções visíveis; modelos e contexto salvos; erro do servidor; credencia
   }
   await expect(page.getByRole("button", { name: "Apagar dados antigos já convertidos" })).toHaveCount(0);
 
-  await page.getByLabel("Modelo principal", { exact: true }).selectOption("qwen3.6:latest");
+  await escolherOpcao(page, "Modelo principal", "qwen3.6:latest");
   await page.getByLabel("Contexto de trabalho (tokens)").fill("16384");
   await page.getByRole("button", { name: "Salvar modelos" }).click();
   await expect(avisos(page).getByText("Modelos salvos")).toBeVisible();
   await page.reload();
-  await expect(page.getByLabel("Modelo principal", { exact: true })).toHaveValue("qwen3.6:latest");
+  await expect(valorDoSeletor(page, "Modelo principal")).toContainText("qwen3.6:latest");
   await expect(page.getByLabel("Contexto de trabalho (tokens)")).toHaveValue("16384");
 
   await page.getByLabel("Contexto de trabalho (tokens)").fill("300000");

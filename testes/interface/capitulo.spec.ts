@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { projetoComRoteiro } from "./apoio.js";
+import { escolherOpcao, projetoComRoteiro } from "./apoio.js";
 
 test("cenas, versões, refazer com outro modelo, continuidade e aprovação com seleção", async ({ page, request }) => {
   await request.post("/__teste/reiniciar", { data: { comWorkspace: true } });
@@ -16,7 +16,7 @@ test("cenas, versões, refazer com outro modelo, continuidade e aprovação com 
   await expect(page.getByLabel("Versão")).toContainText(/v1 · gemma4:12b-it-qat · [\d,]+ s · Contexto: \d+% \([\d.]+ de 32\.768\)/);
 
   await page.getByLabel("O que corrigir").fill("Brisa precisa aparecer mais");
-  await page.getByLabel("Gerar com").selectOption("qwen3.6:latest");
+  await escolherOpcao(page, "Gerar com", "qwen3.6:latest");
   await page.getByRole("button", { name: "Refazer com esta instrução" }).click();
   await expect(page.getByLabel("Versão")).toHaveValue("2", { timeout: 10000 });
   await expect(page.getByLabel("Versão")).toContainText("v2 · qwen3.6:latest");
