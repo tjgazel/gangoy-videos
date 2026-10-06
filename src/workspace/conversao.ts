@@ -11,6 +11,8 @@ import { ARQUIVO_BANCO } from "./workspace.js";
 const BANCO_ANTIGO = "app.db";
 const PROJETOS_ANTIGOS = "projetos";
 const SUFIXO = ".migrado";
+// Só o que a conversão renomeia; outros *.migrado em dados/ não são nossos.
+const RENOMEADOS = [BANCO_ANTIGO, `${BANCO_ANTIGO}-wal`, `${BANCO_ANTIGO}-shm`, PROJETOS_ANTIGOS];
 
 export function existemDadosAntigos(pastaDados: string): boolean {
   return existsSync(join(pastaDados, BANCO_ANTIGO)) || existsSync(join(pastaDados, PROJETOS_ANTIGOS));
@@ -97,7 +99,7 @@ export function converterDadosAntigos(
   // Se uma renomeação falhar, desfaz as anteriores para dados/ ficar como estava.
   const renomeados: string[] = [];
   try {
-    for (const nome of [BANCO_ANTIGO, `${BANCO_ANTIGO}-wal`, `${BANCO_ANTIGO}-shm`, PROJETOS_ANTIGOS]) {
+    for (const nome of RENOMEADOS) {
       const caminho = join(pastaDados, nome);
       if (!existsSync(caminho)) continue;
       renomear(caminho, `${caminho}${SUFIXO}`);
@@ -122,8 +124,8 @@ export function converterDadosAntigos(
 export function listarDadosAntigosConvertidos(): { itens: { nome: string; caminho: string; bytes: number }[] } {
   const pastaDados = obterOpcoesExecucao().pastaDados;
   if (!existsSync(pastaDados)) return { itens: [] };
-  const itens = readdirSync(pastaDados)
-    .filter((nome) => nome.endsWith(SUFIXO))
+  const itens = RENOMEADOS.map((nome) => `${nome}${SUFIXO}`)
+    .filter((nome) => existsSync(join(pastaDados, nome)))
     .map((nome) => {
       const caminho = join(pastaDados, nome);
       const bytes = statSync(caminho).isDirectory() ? medirPasta(caminho).bytes : statSync(caminho).size;
