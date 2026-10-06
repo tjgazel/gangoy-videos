@@ -40,8 +40,8 @@ test("aviso 'Tarefa concluída' ao terminar", async ({ page, request }) => {
 
 test("status do Ollama aparece com título 'Ollama online'", async ({ page }) => {
   await page.goto("/producao");
-  await expect(page.getByTitle("Ollama online")).toBeVisible();
-  await expect(page.getByTitle("Workspace disponível")).toBeVisible();
+  await expect(page.getByLabel("Ollama online")).toBeVisible();
+  await expect(page.getByLabel("Workspace disponível")).toBeVisible();
 });
 
 test("sem workspace, qualquer tela leva às boas-vindas", async ({ page, request }) => {
