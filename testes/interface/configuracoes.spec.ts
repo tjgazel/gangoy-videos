@@ -70,3 +70,13 @@ test("avisa quando o modelo leve aceita menos que o contexto de trabalho", async
   await expect(page.getByText("O modelo leve aceita até")).toHaveCount(0);
   await expect(page.getByText("o “Context length” do Ollama não o limita")).toBeVisible();
 });
+
+test("mostra o contexto padrão do Ollama: em vigor e, se diferente, o configurado", async ({ page, request }) => {
+  await request.post("/__teste/reiniciar", { data: { comWorkspace: true } });
+  await page.goto("/configuracoes");
+  const cartao = page.locator("[data-slot=card]").filter({ has: page.getByRole("heading", { level: 2, name: "Ollama" }) });
+  // O servidor de teste imita um Ollama que subiu com 262.144 e cujo slider foi mudado para 65.536 sem reiniciar.
+  await expect(cartao.getByText("Contexto padrão", { exact: true })).toBeVisible();
+  await expect(cartao).toContainText("262.144 tokens");
+  await expect(cartao).toContainText("Configurado no app do Ollama: 65.536 tokens. Reinicie o Ollama para esse valor valer.");
+});
