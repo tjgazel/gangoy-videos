@@ -17,15 +17,9 @@ import { iniciarOllamaFalso, MODELOS_PADRAO } from "../testes/apoio/ollamaFalso.
 import { respostaPadraoOllama } from "../testes/apoio/respostasOllama.js";
 import { criarPastaTemporaria, removerPasta } from "../testes/apoio/ambiente.js";
 import { criarDadosAntigos } from "../testes/apoio/fixturesAntigas.js";
-import { gravarBancoOllamaApp, gravarLogOllamaApp } from "../testes/apoio/ollamaApp.js";
 
 const PORTA = 3100;
 const falso = await iniciarOllamaFalso();
-// Pasta do app do Ollama de mentira: subiu com 262.144 e o slider foi mudado para 65.536 sem reiniciar.
-const pastaOllamaApp = criarPastaTemporaria("ollama-app");
-gravarBancoOllamaApp(pastaOllamaApp, 65536);
-gravarLogOllamaApp(pastaOllamaApp, 262144);
-process.env.GANGOY_PASTA_OLLAMA = pastaOllamaApp;
 let raiz = criarPastaTemporaria("e2e");
 
 const app = await criarApp({ porta: PORTA, pastaDados: join(raiz, "dados"), urlOllama: falso.url });

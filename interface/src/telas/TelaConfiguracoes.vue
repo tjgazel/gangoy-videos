@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from "vue";
 import { chamarApi } from "../api/cliente";
-import type { ConfiguracoesSistema, ContextoPadraoOllama } from "../api/tipos";
+import type { ConfiguracoesSistema } from "../api/tipos";
 import { Cpu, FolderInput, FolderOpen, Trash2, TriangleAlert, Unplug, MonitorPlay } from "@lucide/vue";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -71,13 +71,6 @@ async function apagarDadosAntigos() {
   } catch (falha) {
     avisar((falha as Error).message, "erro");
   }
-}
-
-// ---- Contexto padrão do Ollama (o slider "Context length" do app) ----
-const contextoOllama = ref<ContextoPadraoOllama | null>(null);
-
-async function carregarContextoOllama() {
-  contextoOllama.value = await chamarApi<ContextoPadraoOllama>("/api/ollama/contexto-padrao");
 }
 
 // ---- Modelos ----
@@ -165,7 +158,7 @@ async function desconectar(canal: { idCanal: string; tituloCanal: string }) {
 onMounted(async () => {
   await recarregarModelos();
   if (configuracoes.value) Object.assign(formularioModelos, configuracoes.value);
-  await Promise.all([carregarDadosAntigos().catch(() => {}), carregarYoutube().catch(() => {}), carregarContextoOllama().catch(() => {})]);
+  await Promise.all([carregarDadosAntigos().catch(() => {}), carregarYoutube().catch(() => {})]);
 });
 </script>
 <template>
@@ -205,24 +198,6 @@ onMounted(async () => {
           <dl class="grid gap-1.5 text-sm">
             <div class="grid gap-3 sm:grid-cols-[9rem_1fr]"><dt class="text-muted-foreground">Endereço</dt><dd>{{ status?.ollama.url }}</dd></div>
             <div class="grid gap-3 sm:grid-cols-[9rem_1fr]"><dt class="text-muted-foreground">Situação</dt><dd>{{ status?.ollama.online ? `Online, versão ${status.ollama.versao}` : "Fora do ar" }}</dd></div>
-            <div class="grid gap-3 sm:grid-cols-[9rem_1fr]">
-              <dt class="text-muted-foreground">Contexto padrão</dt>
-              <dd class="grid gap-1">
-                <span v-if="contextoOllama?.emVigor" class="tabular-nums">{{ formatarNumero(contextoOllama.emVigor) }} tokens</span>
-                <span v-else-if="contextoOllama?.configurado" class="tabular-nums">
-                  {{ formatarNumero(contextoOllama.configurado) }} tokens (configurado; não foi possível confirmar se já está em vigor)
-                </span>
-                <span v-else class="text-muted-foreground">Não foi possível ler (só o app do Ollama para Windows guarda esse valor)</span>
-                <span
-                  v-if="contextoOllama?.emVigor && contextoOllama.configurado && contextoOllama.configurado !== contextoOllama.emVigor"
-                  class="flex items-start gap-1.5 text-amber-600 dark:text-amber-400"
-                >
-                  <TriangleAlert class="mt-0.5 size-4 shrink-0" />
-                  Configurado no app do Ollama: {{ formatarNumero(contextoOllama.configurado) }} tokens. Reinicie o Ollama para esse valor valer.
-                </span>
-                <small class="text-muted-foreground">Vale só para quem não pede um contexto; o Gangoy Vídeos envia o seu a cada chamada.</small>
-              </dd>
-            </div>
           </dl>
 
         <Separator />
@@ -238,8 +213,8 @@ onMounted(async () => {
             <Campo rotulo="Contexto de trabalho (tokens)">
               <Input :model-value="formularioModelos.contextoTrabalho" type="number" step="1024" @update:model-value="formularioModelos.contextoTrabalho = Number($event)" />
               <template v-if="principalEscolhido?.contextoMaximo" #dica>
-                O modelo principal aceita até {{ formatarNumero(principalEscolhido.contextoMaximo) }} tokens. Contexto maior usa mais memória da placa de vídeo.
-                O app envia este contexto em cada chamada: o “Context length” do Ollama não o limita.
+                Contexto que o app pede ao Ollama em cada chamada, limitado ao máximo de cada modelo (o principal aceita até
+                {{ formatarNumero(principalEscolhido.contextoMaximo) }} tokens). Contexto maior usa mais memória da placa de vídeo.
                 <template v-if="leveAceitaMenos">
                   O modelo leve aceita até {{ formatarNumero(leveAceitaMenos) }} tokens: nas chamadas dele o contexto será {{ formatarNumero(leveAceitaMenos) }}.
                 </template>
