@@ -60,3 +60,23 @@ test("a interface não faz requisições para fora da máquina", async ({ page }
   await page.waitForLoadState("networkidle");
   expect(externas).toEqual([]);
 });
+
+test("o que é clicável mostra o cursor de mão", async ({ page, request }) => {
+  await request.post("/api/projetos", { data: { nome: "Fábulas" } });
+  await page.goto("/projetos");
+  const clicaveis = [
+    page.getByRole("navigation", { name: "Menu principal" }).getByRole("link", { name: "Revisão" }),
+    page.getByRole("button", { name: "Novo projeto" }),
+    page.getByRole("button", { name: "Editar" }),
+    page.getByRole("combobox", { name: "Projeto" }),
+    page.getByRole("button", { name: "Tema" }),
+    page.getByRole("button", { name: "Alternar barra lateral" }),
+  ];
+  for (const elemento of clicaveis) await expect(elemento).toHaveCSS("cursor", "pointer");
+  // Itens de menu e de lista também.
+  await page.getByRole("button", { name: "Tema" }).click();
+  await expect(page.getByRole("menuitem", { name: "Claro" })).toHaveCSS("cursor", "pointer");
+  await page.keyboard.press("Escape");
+  await page.getByRole("combobox", { name: "Projeto" }).click();
+  await expect(page.getByRole("option", { name: "Fábulas" })).toHaveCSS("cursor", "pointer");
+});

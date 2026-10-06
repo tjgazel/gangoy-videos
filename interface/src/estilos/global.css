@@ -123,3 +123,9 @@
     @apply font-sans;
     }
 }
+
+/* O Tailwind v4 não põe cursor de mão em botões e links. Fora das camadas de propósito: vale também para
+   itens de menu e de lista, cujas classes do shadcn usam cursor-default. Desabilitados ficam de fora. */
+:is(a[href], button, summary, label[for], select, [role="button"], [role="link"], [role="combobox"], [role="menuitem"], [role="menuitemradio"], [role="menuitemcheckbox"], [role="option"], [role="checkbox"], [role="tab"]):not(:disabled, [aria-disabled="true"], [data-disabled]) {
+  cursor: pointer;
+}
