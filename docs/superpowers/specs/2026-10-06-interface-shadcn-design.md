@@ -33,10 +33,10 @@ O objetivo é uma interface de painel administrativo moderna, montada sobre o sh
 
 ## 3. Fundação
 
-- **Dependências novas:** `tailwindcss`, `@tailwindcss/vite`, `lucide-vue-next`, `@vueuse/core`, e as que o CLI do shadcn-vue acrescentar (`reka-ui`, `class-variance-authority`, `clsx`, `tailwind-merge`, `tw-animate-css`, `vue-sonner`).
+- **Dependências novas:** `tailwindcss`, `@tailwindcss/vite`, `@lucide/vue` (o pacote de ícones que o CLI atual usa), `@vueuse/core`, e as que o CLI do shadcn-vue acrescentar (`reka-ui`, `class-variance-authority`, `clsx`, `tailwind-merge`, `tw-animate-css`, `vue-sonner`, `shadcn-vue`). O estilo é o padrão do CLI atual (`reka-nova`), com a fonte do sistema no lugar da Geist do Google Fonts, para a interface local não fazer requisições externas.
 - **Vite:** o plugin `tailwindcss()` entra em `interface/vite.config.ts`, junto do alias `@` apontando para `interface/src`.
 - **TypeScript:** `interface/tsconfig.json` ganha `baseUrl` e `paths` com `@/*`. O `vue-tsc` do `npm run verificar` lê esse arquivo.
-- **CLI:** `shadcn-vue init` com o estilo padrão e a base de cor `neutral`. O `components.json` fica em `interface/`. Os componentes são gerados em `interface/src/components/ui/`.
+- **CLI:** `shadcn-vue init` com o estilo padrão e a base de cor `neutral`. O `components.json` fica em `interface/`. Como o CLI só reconhece a pasta se ela tiver um `package.json`, os componentes novos entram por `npm run ui:adicionar -- <nome>`, que cria um `package.json` provisório em `interface/` e o remove no fim. Os componentes são gerados em `interface/src/components/ui/`.
 - **Regra:** os arquivos de `components/ui/` são gerados e **não são editados à mão**. Qualquer ajuste visual vai em quem os usa, por classes do Tailwind.
 - **CSS:** `interface/src/estilos/` passa a ter só `global.css` (`@import "tailwindcss"` e as variáveis do tema que o CLI gera). `temas.css` e `base.css` são removidos ao fim, depois que nenhuma tela os usa.
 
@@ -73,7 +73,7 @@ SidebarProvider
 | Configurações | `Settings` |
 
 - O menu mantém `aria-label="Menu principal"` e os mesmos nomes de link, para os testes continuarem válidos.
-- O cabeçalho contém: `SidebarTrigger`; o seletor de projeto (`Select`); o indicador da fila como `Popover`, mantendo o nome acessível "Fila: N executando · M aguardando"; e os pontos de status do Ollama e da workspace, cada um num `Tooltip` e mantendo os `title` atuais ("Ollama online", "Workspace disponível").
+- O cabeçalho contém: `SidebarTrigger`; o seletor de projeto (`Select`); o indicador da fila como `Popover`, mantendo o nome acessível "Fila: N executando · M aguardando"; e os pontos de status do Ollama e da workspace, cada um num `Tooltip`, com `aria-label` ("Ollama online", "Workspace disponível") no lugar do `title`, para não mostrar duas dicas.
 - `SidebarInset` ocupa a altura da janela e só o `main` rola, o que substitui o CSS de `.estrutura`/`.area` do opencode.
 - A barra lateral fica recolhida em ícones em janelas estreitas.
 
@@ -85,13 +85,14 @@ SidebarProvider
 | `.botao`, `.botao.principal` e `.botao.perigo` | `Button` com `variant` (`default`, `outline` e `destructive`) |
 | `input`, `textarea` e `label.campo` | `Input`, `Textarea` e `Label` |
 | `<select>` nativos (modelo, projeto, versão) | `Select` |
-| listas de projetos e capítulos | `Table` |
+| lista de projetos | grade de `Card` (cada um com ações) |
+| tabelas de Configurações (canais, modelos) | `Table` |
 | estados (modelo não instalado, corte de contexto, CPU) | `Badge` e `Alert` |
 | `BarraProgresso` | `Progress` |
 | `DialogoConfirmacao` | `AlertDialog` |
 | `PainelLateral` | `Sheet` |
 | `Aviso` | `Sonner` |
-| seções do dossiê e das configurações | `Tabs` e `Separator` |
+| seções do dossiê e das configurações | `Card` empilhados com `Separator` (todas as seções visíveis ao mesmo tempo, sem `Tabs`) |
 | mensagens "Nenhum projeto ainda." e semelhantes | `Empty` |
 | `NavegadorPastas` | `ScrollArea`, `Button` e ícones `Folder` e `FolderOpen` |
 
@@ -116,7 +117,7 @@ Em cada tela, o comportamento e os textos continuam os mesmos; o que muda é a m
 
 - Os testes do Playwright já usam papéis, rótulos e textos acessíveis. Esses seletores são preservados: os componentes novos mantêm os mesmos nomes acessíveis.
 - **O que precisa mudar:**
-  - Os `Select` do shadcn-vue não são `<select>` nativos; testes que usam `selectOption` passam a abrir o seletor e clicar na opção.
+  - Os `Select` do shadcn-vue não são `<select>` nativos; testes que usam `selectOption` passam a abrir o seletor e clicar na opção, por meio do auxiliar `escolherOpcao` em `testes/interface/apoio.ts`.
   - `tema.spec.ts` deixa de olhar `data-tema` e passa a olhar a classe `dark` do `<html>`.
   - Toasts do `Sonner` e o diálogo do `AlertDialog` têm papéis próprios (`status` e `alertdialog`); os testes que esperavam `dialog` ou `status` são ajustados onde for o caso.
 - Nenhum teste é removido nem enfraquecido para passar; se um seletor deixa de existir, o teste é reescrito para verificar o mesmo comportamento.
