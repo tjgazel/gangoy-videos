@@ -182,7 +182,7 @@ Em `fila.spec.ts`, trocar `getByTitle("Ollama online")` por `getByLabel("Ollama 
 - [ ] **Step 2: Rodar e ver falhar**
 
 Run: `npm run teste:interface -- testes/interface/shell.spec.ts testes/interface/fila.spec.ts`
-Expected: FAIL (sem barra lateral nova, sem "Alternar barra lateral", sem `banner`).
+Expected: FAIL (sem barra lateral nova, sem "Alternar barra lateral", sem `header`).
 
 - [ ] **Step 3: Implementar `MenuApp.vue`**
 
