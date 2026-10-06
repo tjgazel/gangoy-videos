@@ -6,8 +6,8 @@ defineProps<{ rotulo: string }>();
 </script>
 
 <template>
-  <Label class="grid items-stretch gap-2">
-    <span>{{ rotulo }}</span>
+  <Label class="grid items-stretch gap-2 font-normal leading-normal">
+    <span class="font-medium">{{ rotulo }}</span>
     <slot />
     <small v-if="$slots.dica" class="text-xs font-normal text-muted-foreground"><slot name="dica" /></small>
   </Label>

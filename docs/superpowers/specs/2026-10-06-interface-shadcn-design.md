@@ -1,6 +1,6 @@
 # Spec: Interface com shadcn-vue
 
-Data: 2026-10-06 · Status: aguardando revisão
+Data: 2026-10-06 · Status: implementada
 
 Este documento descreve a troca da base visual da interface (`interface/`) pelo shadcn-vue. Ele substitui o plano de "Dashboard Shell" que o opencode deixou em `.opencode/plan/refatoracao-dashboard.md`; a Fase 1 desse plano (estrutura fixa com scroll só no conteúdo) está incorporada aqui.
 
