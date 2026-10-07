@@ -2,7 +2,6 @@ import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { obterConfiguracoesSistema, salvarConfiguracao } from "../configuracoes/sistema.js";
 import { ErroAplicacao } from "../nucleo/erros.js";
-import { lerContextoPadraoOllama } from "../ollama/configuracaoOllama.js";
 import { garantirModeloInstalado, listarModelos, normalizarNomeModelo } from "../ollama/modelos.js";
 
 const esquemaConfiguracoes = z
@@ -19,9 +18,6 @@ const esquemaConfiguracoes = z
 
 export function registrarRotasConfiguracoes(app: FastifyInstance): void {
   app.get("/api/ollama/modelos", async () => listarModelos());
-
-  // Contexto padrão do Ollama (o slider do app): o que está em vigor e o que está configurado.
-  app.get("/api/ollama/contexto-padrao", async () => lerContextoPadraoOllama());
 
   app.get("/api/configuracoes", async () => obterConfiguracoesSistema());
 

@@ -4,7 +4,7 @@ import { avisos, escolherOpcao, valorDoSeletor } from "./apoio.js";
 test("seções visíveis; modelos e contexto salvos; erro do servidor; credenciais", async ({ page, request }) => {
   await request.post("/__teste/reiniciar", { data: { comWorkspace: true } });
   await page.goto("/configuracoes");
-  for (const secao of ["Workspace", "Modelos", "YouTube", "Ollama"]) {
+  for (const secao of ["Workspace", "Ollama", "YouTube"]) {
     await expect(page.getByRole("heading", { level: 2, name: secao })).toBeVisible();
   }
   await expect(page.getByRole("button", { name: "Apagar dados antigos já convertidos" })).toHaveCount(0);
@@ -68,17 +68,15 @@ test("avisa quando o modelo leve aceita menos que o contexto de trabalho", async
   await expect(page.getByText("O modelo leve aceita até 131.072 tokens: nas chamadas dele o contexto será 131.072.")).toBeVisible();
   await page.getByLabel("Contexto de trabalho (tokens)").fill("100000");
   await expect(page.getByText("O modelo leve aceita até")).toHaveCount(0);
-  await expect(page.getByText("o “Context length” do Ollama não o limita")).toBeVisible();
+  await expect(page.getByText("Contexto que o app pede ao Ollama em cada chamada, limitado ao máximo de cada modelo")).toBeVisible();
 });
 
-test("mostra o contexto padrão do Ollama: em vigor e, se diferente, o configurado", async ({ page, request }) => {
+test("o cartão Ollama não mostra um contexto padrão (o app do Ollama não o expõe)", async ({ page, request }) => {
   await request.post("/__teste/reiniciar", { data: { comWorkspace: true } });
   await page.goto("/configuracoes");
-  const cartao = page.locator("[data-slot=card]").filter({ has: page.getByRole("heading", { level: 2, name: "Ollama" }) });
-  // O servidor de teste imita um Ollama que subiu com 262.144 e cujo slider foi mudado para 65.536 sem reiniciar.
-  await expect(cartao.getByText("Contexto padrão", { exact: true })).toBeVisible();
-  await expect(cartao).toContainText("262.144 tokens");
-  await expect(cartao).toContainText("Configurado no app do Ollama: 65.536 tokens. Reinicie o Ollama para esse valor valer.");
+  await expect(page.getByRole("heading", { level: 2, name: "Ollama" })).toBeVisible();
+  await expect(page.getByText("Contexto padrão")).toHaveCount(0);
+  await expect(page.getByText("Context length")).toHaveCount(0);
 });
 
 test("modal explica como criar as credenciais do YouTube no Google Cloud", async ({ page, request }) => {
@@ -100,4 +98,29 @@ test("modal explica como criar as credenciais do YouTube no Google Cloud", async
   await expect(modal.locator("a:not([target=_blank][rel~=noopener][rel~=noreferrer])")).toHaveCount(0);
   await page.keyboard.press("Escape");
   await expect(modal).toBeHidden();
+});
+
+test("Ollama e Modelos são um cartão só, nesta ordem: situação, modelos escolhidos e modelos instalados", async ({ page, request }) => {
+  await request.post("/__teste/reiniciar", { data: { comWorkspace: true } });
+  await page.goto("/configuracoes");
+  await expect(page.getByRole("heading", { level: 2, name: "Modelos" })).toHaveCount(0);
+  const cartao = page.locator("[data-slot=card]").filter({ has: page.getByRole("heading", { level: 2, name: "Ollama" }) });
+  await expect(cartao).toHaveCount(1);
+  for (const dentro of [
+    cartao.getByText("Situação", { exact: true }),
+    cartao.getByRole("combobox", { name: "Modelo principal" }),
+    cartao.getByRole("combobox", { name: "Modelo leve" }),
+    cartao.getByLabel("Contexto de trabalho (tokens)"),
+    cartao.getByRole("button", { name: "Salvar modelos" }),
+    cartao.getByRole("heading", { level: 3, name: "Modelos instalados" }),
+    cartao.getByRole("columnheader", { name: "Contexto máximo" }),
+  ]) {
+    await expect(dentro).toBeVisible();
+  }
+  const y = async (alvo: import("@playwright/test").Locator) => (await alvo.boundingBox())!.y;
+  const situacao = await y(cartao.getByText("Situação", { exact: true }));
+  const escolhidos = await y(cartao.getByRole("combobox", { name: "Modelo principal" }));
+  const instalados = await y(cartao.getByRole("heading", { level: 3, name: "Modelos instalados" }));
+  expect(situacao).toBeLessThan(escolhidos);
+  expect(escolhidos).toBeLessThan(instalados);
 });
